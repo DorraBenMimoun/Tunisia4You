@@ -7,7 +7,7 @@ using BCrypt.Net;
 
 namespace MiniProjet.Services
 {
-    public class UserService : IUserService
+    public class UserService 
     {
         private readonly IMongoCollection<User> _usersCollection; // Référence à la collection MongoDB
 
