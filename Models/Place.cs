@@ -1,50 +1,82 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Swashbuckle.AspNetCore.Annotations;
+using System.Collections.Generic;
 
 namespace MiniProjet.Models
 {
+    [SwaggerSchema("Modèle représentant un lieu (restaurant, hôtel, site touristique, etc.).")]
     public class Place
     {
-
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        [SwaggerSchema("Identifiant unique du lieu (ObjectId).", ReadOnly = true)]
+        public string? Id { get; set; }
 
         [BsonElement("name")]
+        [BindRequired]
+        [SwaggerSchema("Nom du lieu.")]
         public string Name { get; set; }
 
         [BsonElement("category")]
-        public string Category { get; set; } // Restaurant, Café, Hôtel, Site touristique...
+        [BindRequired]
+        [SwaggerSchema("Catégorie du lieu.")]
+        public string Category { get; set; }
 
         [BsonElement("description")]
-        public string Description { get; set; } // Brève description du lieu
+        [BindRequired]
+        [SwaggerSchema("Brève description du lieu.")]
+        public string Description { get; set; }
 
         [BsonElement("address")]
-        public string Address { get; set; } // Adresse complète
+        [BindRequired]
+        [SwaggerSchema("Adresse complète du lieu.")]
+        public string? Address { get; set; }
+
+        [BsonElement("city")]
+        [BindRequired]
+        [SwaggerSchema("Ville où se situe le lieu.")]
+        public string? City { get; set; }
 
         [BsonElement("latitude")]
-        public double Latitude { get; set; } // Coordonnées GPS (Latitude)
+        [BindRequired]
+        [SwaggerSchema("Latitude du lieu pour la géolocalisation.")]
+        public double Latitude { get; set; }
 
         [BsonElement("longitude")]
-        public double Longitude { get; set; } // Coordonnées GPS (Longitude)
+        [BindRequired]
+        [SwaggerSchema("Longitude du lieu pour la géolocalisation.")]
+        public double Longitude { get; set; }
 
         [BsonElement("phoneNumber")]
-        public string PhoneNumber { get; set; } // Numéro de contact
+        [BindRequired]
+        [SwaggerSchema("Numéro de téléphone du lieu.")]
+
+        public string? PhoneNumber { get; set; }
 
         [BsonElement("openingHours")]
-        public Dictionary<string, string> OpeningHours { get; set; } // Stocke les horaires d'ouverture (ex: "Lundi": "08:00 - 22:00")
+        [BindRequired]
+        [SwaggerSchema("Horaires d'ouverture du lieu.")]
+        public Dictionary<string, string> OpeningHours { get; set; }
 
         [BsonElement("averageRating")]
-        public double AverageRating { get; set; } // Note moyenne du lieu (calculée)
+        [SwaggerSchema("Note moyenne du lieu.")]
+        public double AverageRating { get; set; }
 
         [BsonElement("reviewCount")]
-        public int ReviewCount { get; set; } // Nombre total d'avis
+        [SwaggerSchema("Nombre total d'avis reçus.")]
+        public int ReviewCount { get; set; }
 
         [BsonElement("tags")]
-        public List<string> Tags { get; set; } // Liste de tags comme "Wi-Fi", "Ambiance calme", etc.
+        [BindRequired]
+        [SwaggerSchema("Liste de tags associés au lieu.")]
+        public List<string> Tags { get; set; }
 
         [BsonElement("images")]
-        public List<string> Images { get; set; } // URLs des images du lieu
+        [BindRequired]
+        [SwaggerSchema("Liste des URLs des images du lieu.")]
+        public List<string> Images { get; set; }
 
         // Constructeur pour initialiser les listes et dictionnaires
         public Place()

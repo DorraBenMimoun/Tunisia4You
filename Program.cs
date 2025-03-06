@@ -25,10 +25,13 @@ builder.Services.AddScoped(sp =>
 
 // 📌 Ajout des services et des repositories
 builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PlaceRepository>();
 builder.Services.AddScoped<PlaceService>();
-
+builder.Services.AddScoped<TagRepository>();
+builder.Services.AddScoped<TagService>();
+builder.Services.AddScoped<ListeRepository>();
+builder.Services.AddScoped<ListeService>();
 
 // 📌 Ajout de JwtHelper pour la gestion des tokens
 builder.Services.AddSingleton<JwtHelper>();
@@ -59,7 +62,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "MiniProjet", Version = "v1" });
+    c.SwaggerDoc("v1", new() { 
+        Title = "MiniProjet API", 
+        Version = "v1",
+        Description = "API pour la gestion des lieux et des tags.",
+    });
 
 
     // 🔹 Ajout du support JWT dans Swagger
@@ -87,6 +94,9 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    // Ajout des annotations Swagger dans les modèles et contrôleurs
+    c.EnableAnnotations();
 });
 
 

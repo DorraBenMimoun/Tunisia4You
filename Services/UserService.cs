@@ -4,35 +4,38 @@ using MiniProjet.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using BCrypt.Net;
+using MiniProjet.Repositories;
 
 namespace MiniProjet.Services
 {
-    public class UserService : IUserService
+    public class UserService 
     {
         private readonly IMongoCollection<User> _usersCollection; // Référence à la collection MongoDB
+        private readonly UserRepository _userRepository;
 
         // Injection de la base de données via le constructeur
-        public UserService(IMongoDatabase database)
+        public UserService(IMongoDatabase database, UserRepository userRepository)
         {
             _usersCollection = database.GetCollection<User>("Users"); // Accède à la collection "Users"
+            _userRepository = userRepository;
         }
 
         // 🔹 Récupérer tous les utilisateurs
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
-            return await _usersCollection.Find(user => true).ToListAsync();
+            return await _userRepository.GetAllAsync();
         }
 
         // 🔹 Récupérer un utilisateur par ID
         public async Task<User> GetUserByIdAsync(string id)
         {
-            return await _usersCollection.Find(user => user.Id == id).FirstOrDefaultAsync();
+            return await _userRepository.GetByIdAsync(id);
         }
 
         // 🔹 Créer un utilisateur
         public async Task<User> CreateUserAsync(User user)
         {
-            await _usersCollection.InsertOneAsync(user);
+            await _userRepository.CreateAsync(user);
             return user;
         }
 
