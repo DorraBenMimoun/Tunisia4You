@@ -38,6 +38,17 @@ namespace MiniProjet.Controllers
         [SwaggerResponse(404, "Échec : Utilisateur non trouvé.")]
         public async Task<ActionResult<User>> GetUserById(string id)
         {
+
+            var userTest = HttpContext.Items["User"] as User;
+            if (userTest != null)
+            {
+                Console.WriteLine($"Utilisateur connecté : {userTest.Username}");
+            }
+            else
+            {
+                return Unauthorized(new { message = "Utilisateur non authentifié." });
+            }
+
             if (!ObjectId.TryParse(id, out ObjectId objectId))
             {
                 return BadRequest(new { message = "Erreur : L'ID fourni n'est pas valide." });
@@ -55,6 +66,7 @@ namespace MiniProjet.Controllers
 
         // 🔹 Mettre à jour un utilisateur
         [HttpPut("{id}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Mettre à jour un utilisateur", Description = "Modifie les informations d'un utilisateur existant.")]
         [SwaggerResponse(200, "Succès : Mise à jour réussie.")]
         [SwaggerResponse(400, "Échec : ID invalide ou données incorrectes.")]
@@ -87,6 +99,7 @@ namespace MiniProjet.Controllers
 
         // 🔹 Supprimer un utilisateur
         [HttpDelete("{id}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Supprimer un utilisateur", Description = "Supprime un utilisateur en fonction de son identifiant.")]
         [SwaggerResponse(200, "Succès : L'utilisateur a été supprimé.")]
         [SwaggerResponse(400, "Échec : ID invalide.")]

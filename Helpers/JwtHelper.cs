@@ -25,7 +25,8 @@ namespace MiniProjet.Helpers
             var claims = new[]
             {
                 new Claim(ClaimTypes.Name, user.Username), // Stocke le nom d'utilisateur
-                new Claim(ClaimTypes.Email, user.Email) // Stocke l'email de l'utilisateur
+                new Claim(ClaimTypes.Email, user.Email), // Stocke l'email de l'utilisateur
+                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User") // Stocke le rôle de l'utilisateur (Admin ou User)
             };
 
             // 📌 2️⃣ Récupération de la clé secrète depuis appsettings.json et conversion en bytes

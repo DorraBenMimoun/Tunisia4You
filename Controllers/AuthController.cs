@@ -49,28 +49,48 @@ namespace MiniProjet.Controllers
         /// Connexion d'un utilisateur existant.
         /// </summary>
         /// <param name="user">Données de l'utilisateur</param>
-        /// <returns>JWT Token ou erreur</returns>
+        /// <returns>JWT Token et informations de l'utilisateur ou erreur</returns>
         [HttpPost("login")]
-        [SwaggerOperation(Summary = "Connexion utilisateur", Description = "Vérifie les identifiants et renvoie un token JWT si valide.")]
-        [SwaggerResponse(200, "Connexion réussie, retour du token", typeof(object))]
+        [SwaggerOperation(Summary = "Connexion utilisateur", Description = "Vérifie les identifiants et renvoie un token JWT ainsi que les détails de l'utilisateur si valide.")]
+        [SwaggerResponse(200, "Connexion réussie, retour du token et des détails utilisateur", typeof(object))]
         [SwaggerResponse(401, "Identifiants invalides", typeof(string))]
         public async Task<IActionResult> Login([FromBody] User user)
         {
+            // Vérifier si l'utilisateur existe
             var existingUser = await _userRepository.GetByUsernameAsync(user.Username);
             if (existingUser == null)
             {
-                return Unauthorized("Invalid credentials");
+                return Unauthorized(new { message = "Identifiants invalides. L'utilisateur n'existe pas." });
             }
-            Console.WriteLine($"existingUser : {existingUser}");
+
+            Console.WriteLine($"existingUser : {existingUser.Username}");
 
             // Vérification du mot de passe
             if (!BCrypt.Net.BCrypt.Verify(user.PasswordHash, existingUser.PasswordHash))
             {
-                return Unauthorized("Invalid credentials");
+                return Unauthorized(new { message = "Identifiants invalides. Le mot de passe est incorrect." });
             }
 
+            // Génération du token JWT
             var token = _jwtHelper.GenerateToken(existingUser);
-            return Ok(new { token });
+
+            // Construction de la réponse avec les détails de l'utilisateur
+            var response = new
+            {
+                token,
+                user = new
+                {
+                    id = existingUser.Id,
+                    username = existingUser.Username,
+                    email = existingUser.Email,
+                    isAdmin = existingUser.IsAdmin,
+                    photo = existingUser.Photo,
+                    createdAt = existingUser.CreatedAt
+                }
+            };
+
+            return Ok(response);
         }
+
     }
 }

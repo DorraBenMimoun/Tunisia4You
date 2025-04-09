@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MiniProjet.Models;
 using MiniProjet.Services;
 using MongoDB.Bson;
@@ -54,6 +55,7 @@ namespace MiniProjet.Controllers
         /// Ajouter une nouvelle liste.
         /// </summary>
         [HttpPost]
+        [Authorize]
         [SwaggerOperation(Summary = "Créer une liste", Description = "Ajoute une nouvelle liste après validation.")]
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]
@@ -82,6 +84,7 @@ namespace MiniProjet.Controllers
         /// Mettre à jour une liste existante.
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Mettre à jour une liste", Description = "Modifie une liste existante en fonction de son ID.")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -136,6 +139,7 @@ namespace MiniProjet.Controllers
         /// Supprimer une liste par son ID.
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Supprimer une liste", Description = "Supprime une liste par son ID.")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
@@ -271,6 +275,7 @@ namespace MiniProjet.Controllers
         /// Rendre une liste privée.
         /// </summary>
         [HttpPatch("{id}/private")]
+        [Authorize]
         [SwaggerOperation(Summary = "Rendre une liste privée", Description = "Modifie une liste pour la rendre privée.")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -313,6 +318,7 @@ namespace MiniProjet.Controllers
         /// Ajouter un lieu à une liste.
         /// </summary>
         [HttpPost("{listeId}/places/{placeId}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Ajouter un lieu à une liste", Description = "Ajoute un lieu spécifique à une liste.")]
         [ProducesResponseType(204)]
         public async Task<IActionResult> AddPlace(string listeId, string placeId)
@@ -362,6 +368,7 @@ namespace MiniProjet.Controllers
         /// Supprimer un lieu d'une liste.
         /// </summary>
         [HttpDelete("{listeId}/places/{placeId}")]
+        [Authorize]
         [SwaggerOperation(Summary = "Supprimer un lieu d'une liste", Description = "Supprime un lieu spécifique d'une liste.")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

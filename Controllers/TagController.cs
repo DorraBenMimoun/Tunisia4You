@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MiniProjet.Models;
 using MiniProjet.Services;
@@ -69,6 +70,7 @@ namespace MiniProjet.Controllers
         /// <param name="TagPlace">Les données du tag à créer.</param>
         /// <returns>Le tag créé.</returns>
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Créer un nouveau tag", Description = "Ajoute un nouveau tag avec un libellé unique à la base de données.")]
         [SwaggerResponse(200, "Tag ajouté avec succès", typeof(TagPlace))]
         [SwaggerResponse(400, "Le libellé du tag doit être unique", typeof(string))]
@@ -96,6 +98,7 @@ namespace MiniProjet.Controllers
         /// <param name="TagPlace">Les nouvelles données du tag.</param>
         /// <returns>Le tag mis à jour.</returns>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Mettre à jour un tag", Description = "Modifie les informations d'un tag existant.")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TagPlace))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -128,6 +131,7 @@ namespace MiniProjet.Controllers
         /// <param name="id">L'ID du tag à supprimer.</param>
         /// <returns>Un message de confirmation.</returns>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Supprimer un tag", Description = "Supprime un tag de la base de données.")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

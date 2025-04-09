@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MiniProjet.Models;
 using MiniProjet.Repositories;
 using MiniProjet.Services;
@@ -74,9 +75,12 @@ namespace MiniProjet.Controllers
         /// <param name="place">Les informations du lieu à créer.</param>
         /// <returns>Le lieu créé.</returns>
         [HttpPost]
-        [SwaggerOperation(Summary = "Créer un lieu", Description = "Ajoute un nouveau lieu à la base de données.")]
-        [SwaggerResponse(201, "Succès : Lieu créé avec succès.", typeof(Place))]
-        [SwaggerResponse(400, "Échec : Données invalides.")]
+        [Authorize(Roles = "Admin")]
+        [SwaggerOperation(Summary = "Créer un lieu", Description = "Ajoute un nouveau lieu à la base de données. Accessible uniquement aux administrateurs.")]
+        [ProducesResponseType(typeof(object), 201)] // Succès
+        [ProducesResponseType(typeof(object), 400)] // Mauvaise requête (données invalides)
+        [ProducesResponseType(typeof(object), 401)] // Non authentifié
+        [ProducesResponseType(typeof(object), 403)] // Non autorisé (non admin)
         public async Task<ActionResult<Place>> Create([FromBody] Place place)
         {
             if (place == null || place.Tags == null || place.Tags.Count == 0)
@@ -106,10 +110,17 @@ namespace MiniProjet.Controllers
             // Mise à jour des tags validés dans l'objet place
             place.Tags = validatedTags;
 
-            // Création du lieu après validation des tags
-            var createdPlace = await _placeService.CreatePlaceAsync(place);
-            return CreatedAtAction(nameof(GetById), new { id = createdPlace.Id }, new { message = "Lieu créé avec succès.", data = createdPlace });
+            try
+            {
+                var createdPlace = await _placeService.CreatePlaceAsync(place);
+                return CreatedAtAction(nameof(GetById), new { id = createdPlace.Id }, new { message = "Lieu créé avec succès.", data = createdPlace });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Une erreur interne est survenue lors de la création du lieu.", details = ex.Message });
+            }
         }
+
 
         /// <summary>
         /// Mettre à jour un lieu existant.
@@ -118,6 +129,7 @@ namespace MiniProjet.Controllers
         /// <param name="place">Les nouvelles informations du lieu.</param>
         /// <returns>Un message de succès ou d'erreur.</returns>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Mettre à jour un lieu", Description = "Modifie les informations d'un lieu existant.")]
         [SwaggerResponse(200, "Succès : Lieu mis à jour avec succès.")]
         [SwaggerResponse(400, "Échec : ID invalide ou données incorrectes.")]
@@ -153,6 +165,7 @@ namespace MiniProjet.Controllers
         /// <param name="id">L'ID du lieu à supprimer.</param>
         /// <returns>Un message de confirmation.</returns>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Supprimer un lieu", Description = "Supprime un lieu en fonction de son identifiant.")]
         [SwaggerResponse(200, "Succès : Lieu supprimé avec succès.")]
         [SwaggerResponse(400, "Échec : ID invalide.")]

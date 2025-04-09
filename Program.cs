@@ -30,8 +30,8 @@ builder.Services.AddScoped<PlaceRepository>();
 builder.Services.AddScoped<PlaceService>();
 builder.Services.AddScoped<TagRepository>();
 builder.Services.AddScoped<TagService>();
-builder.Services.AddScoped<ListeRepository>();
-builder.Services.AddScoped<ListeService>();
+builder.Services.AddScoped<ReviewRepository>();
+builder.Services.AddScoped<ReviewService>();
 
 // 📌 Ajout de JwtHelper pour la gestion des tokens
 builder.Services.AddSingleton<JwtHelper>();
@@ -62,8 +62,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { 
-        Title = "MiniProjet API", 
+    c.SwaggerDoc("v1", new()
+    {
+        Title = "MiniProjet API",
         Version = "v1",
         Description = "API pour la gestion des lieux et des tags.",
     });
@@ -99,6 +100,18 @@ builder.Services.AddSwaggerGen(c =>
     c.EnableAnnotations();
 });
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200") // ✅ origine Angular
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 
 var app = builder.Build();
 
@@ -110,6 +123,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(MyAllowSpecificOrigins);
+app.UseMiddleware<MiniProjet.Middleware.JwtMiddleware>();
+
 
 app.UseAuthentication(); // 🔹 Nécessaire pour activer l'authentification JWT
 
