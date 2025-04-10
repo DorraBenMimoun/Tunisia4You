@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace MiniProjet.Controllers
 {
@@ -235,7 +236,53 @@ namespace MiniProjet.Controllers
             return Ok(new { message = "Liste des lieux récupérée avec succès.", data = places });
         }
 
+        /// <summary>
+        /// Recherche avancée de lieux avec plusieurs critères.
+        /// </summary>
+        /// <param name="name">Nom du lieu (optionnel)</param>
+        /// <param name="tags">Tags à rechercher (optionnel)</param>
+        /// <param name="category">Catégorie du lieu (optionnel)</param>
+        /// <param name="minRating">Note minimale (optionnel)</param>
+        /// <param name="city">Ville du lieu (optionnel)</param>
+        /// <returns>Liste des lieux correspondant aux critères de recherche</returns>
+        [HttpGet("search")]
+        [SwaggerOperation(Summary = "Recherche avancée de lieux", Description = "Recherche des lieux en fonction de plusieurs critères")]
+        [SwaggerResponse(200, "Succès : Liste des lieux retournée.", typeof(List<Place>))]
+        [SwaggerResponse(404, "Échec : Aucun lieu trouvé.")]
+        public async Task<ActionResult<List<Place>>> SearchPlaces(
+            [FromQuery] string? name = null,
+            [FromQuery] string? tags = null,
+            [FromQuery] string? category = null,
+            [FromQuery] double? minRating = null,
+            [FromQuery] string? city = null)
+        {
+            var places = await _placeService.GetAllPlacesAsync();
+            
+            if (places == null || places.Count == 0)
+            {
+                return NotFound(new { message = "Aucun lieu trouvé." });
+            }
 
+            // Filtrage des résultats
+            var filteredPlaces = places.Where(p => 
+                (string.IsNullOrEmpty(name) || p.Name.ToLower().Contains(name.ToLower())) &&
+                (string.IsNullOrEmpty(category) || p.Category.ToLower() == category.ToLower()) &&
+                (string.IsNullOrEmpty(city) || p.City?.ToLower() == city.ToLower()) &&
+                (!minRating.HasValue || p.AverageRating >= minRating.Value) &&
+                (string.IsNullOrEmpty(tags) || p.Tags.Any(t => t.ToLower() == tags.ToLower()))
+            ).ToList();
+
+            if (filteredPlaces.Count == 0)
+            {
+                return NotFound(new { message = "Aucun lieu ne correspond aux critères de recherche." });
+            }
+
+            return Ok(new { 
+                message = "Recherche effectuée avec succès.", 
+                data = filteredPlaces,
+                count = filteredPlaces.Count
+            });
+        }
 
     }
 }
