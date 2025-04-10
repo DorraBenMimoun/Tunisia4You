@@ -1,5 +1,7 @@
-﻿using MiniProjet.Models;
+﻿using MiniProjet.DTOs;
+using MiniProjet.Models;
 using MiniProjet.Repositories;
+using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -27,16 +29,41 @@ namespace MiniProjet.Services
         }
 
         // Ajouter une nouvelle liste
-        public async Task CreateAsync(Liste liste)
+        public async Task<Liste> CreateAsync(CreateListeDTO dto)
         {
+            var liste = new Liste
+            {
+                Nom = dto.Nom,
+                Description = dto.Description,
+                IsPrivate = dto.IsPrivate,
+                CreateurId = dto.CreateurId,
+                LieuxIds = dto.LieuxIds ?? new List<string>(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
             await _listeRepository.CreateAsync(liste);
+            return liste;
         }
 
+
+
         // Mettre à jour une liste existante
-        public async Task UpdateAsync(string id, Liste liste)
+        public async Task<bool> UpdateAsync(string id, UpdateListeDTO dto)
         {
-            await _listeRepository.UpdateAsync(id, liste);
+            var existingListe = await _listeRepository.GetByIdAsync(id);
+            if (existingListe == null) return false;
+
+            existingListe.Nom = dto.Nom ?? existingListe.Nom;
+            existingListe.Description = dto.Description ?? existingListe.Description;
+            existingListe.IsPrivate = dto.IsPrivate ;
+            existingListe.LieuxIds = dto.LieuxIds ?? existingListe.LieuxIds;
+            existingListe.UpdatedAt = DateTime.UtcNow;
+
+            await _listeRepository.UpdateAsync(id, existingListe);
+            return true;
         }
+
 
         // Supprimer une liste par son ID
         public async Task DeleteAsync(string id)
@@ -91,5 +118,12 @@ namespace MiniProjet.Services
         {
             return await _listeRepository.GetByNameAsync(name);
         }
+
+        public async Task RemovePlaceFromAllListsAsync(string placeId)
+        {
+            var update = Builders<Liste>.Update.Pull(l => l.LieuxIds, placeId);
+            await _listeRepository.UpdateManyAsync(update);
+        }
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using MiniProjet.Models;
+﻿using MiniProjet.DTOs;
+using MiniProjet.Models;
 using MiniProjet.Repositories;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -29,48 +30,47 @@ namespace MiniProjet.Services
             return await _placeRepository.GetByIdAsync(id);
         }
 
-        public async Task<Place> CreatePlaceAsync(Place place)
+        public async Task<Place> CreatePlaceAsync(CreatePlaceDTO dto)
         {
-            return await _placeRepository.CreateAsync(place);
+            var place = new Place
+            {
+                Name = dto.Name,
+                Category = dto.Category,
+                Description = dto.Description,
+                Address = dto.Address,
+                City = dto.City,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                PhoneNumber = dto.PhoneNumber,
+                OpeningHours = dto.OpeningHours,
+                Tags = dto.Tags ?? new List<string>(),
+                Images = dto.Images ?? new List<string>(),
+                AverageRating = 0,
+                ReviewCount = 0
+            };
+
+            await _placeRepository.CreateAsync(place);
+            return place;
         }
 
-       public async Task<bool> UpdateAsync(string id, Place place)
-{
-    if (!ObjectId.TryParse(id, out ObjectId objectId))
-    {
-        throw new FormatException("L'ID fourni n'est pas un ObjectId valide.");
-    }
+        public async Task<bool> UpdatePlaceAsync(string id, UpdatePlaceDTO dto)
+        {
+            var place = await _placeRepository.GetByIdAsync(id);
+            if (place == null) return false;
 
-    // Récupérer l'ancien document depuis MongoDB
-    var existingPlace = await _placesCollection.Find(p => p.Id == id).FirstOrDefaultAsync();
-    if (existingPlace == null)
-    {
-        return false; // Lieu introuvable
-    }
+            place.Name = dto.Name ?? place.Name;
+            place.Category = dto.Category ?? place.Category;
+            place.Description = dto.Description ?? place.Description;
+            place.Address = dto.Address ?? place.Address;
+            place.City = dto.City ?? place.City;
+            place.PhoneNumber = dto.PhoneNumber ?? place.PhoneNumber;
+            place.OpeningHours = dto.OpeningHours ?? place.OpeningHours;
+            place.Tags = dto.Tags ?? place.Tags;
+            place.Images = dto.Images ?? place.Images;
 
-    // Appliquer les nouvelles valeurs seulement si elles sont fournies
-    existingPlace.Name = !string.IsNullOrWhiteSpace(place.Name) ? place.Name : existingPlace.Name;
-    existingPlace.Category = !string.IsNullOrWhiteSpace(place.Category) ? place.Category : existingPlace.Category;
-    existingPlace.Description = !string.IsNullOrWhiteSpace(place.Description) ? place.Description : existingPlace.Description;
-    existingPlace.Address = !string.IsNullOrWhiteSpace(place.Address) ? place.Address : existingPlace.Address;
-    existingPlace.PhoneNumber = !string.IsNullOrWhiteSpace(place.PhoneNumber) ? place.PhoneNumber : existingPlace.PhoneNumber;
-    existingPlace.Latitude = place.Latitude != 0 ? place.Latitude : existingPlace.Latitude;
-    existingPlace.Longitude = place.Longitude != 0 ? place.Longitude : existingPlace.Longitude;
-
-    if (place.OpeningHours != null && place.OpeningHours.Count > 0)
-        existingPlace.OpeningHours = place.OpeningHours;
-    
-    if (place.Tags != null && place.Tags.Count > 0)
-        existingPlace.Tags = place.Tags;
-
-    if (place.Images != null && place.Images.Count > 0)
-        existingPlace.Images = place.Images;
-
-    // Mise à jour dans la base de données
-    var result = await _placesCollection.ReplaceOneAsync(p => p.Id == id, existingPlace);
-
-    return result.ModifiedCount > 0;
-}
+            await _placeRepository.UpdateAsync(id, place);
+            return true;
+        }
 
 
 

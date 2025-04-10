@@ -37,5 +37,12 @@ namespace MiniProjet.Models
         [BsonElement("isAdmin")]
         [SwaggerSchema("Indique si l'utilisateur a des privilèges d'administrateur.", Nullable = false)]
         public bool IsAdmin { get; set; } = false;
+
+        [BsonElement("resetPasswordToken")]
+        public string? ResetPasswordToken { get; set; }
+
+        [BsonElement("resetPasswordTokenExpires")]
+        public DateTime? ResetPasswordTokenExpires { get; set; }
+
     }
 }

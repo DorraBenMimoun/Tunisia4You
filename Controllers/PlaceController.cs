@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniProjet.DTOs;
 using MiniProjet.Models;
 using MiniProjet.Repositories;
 using MiniProjet.Services;
@@ -17,11 +18,14 @@ namespace MiniProjet.Controllers
     {
         private readonly PlaceService _placeService;
         private readonly TagRepository _tagPlaceRepository;
+        private readonly ListeService _listeService;
 
-        public PlaceController(PlaceService placeService,TagRepository tagRepository)
+
+        public PlaceController(PlaceService placeService,TagRepository tagRepository, ListeService listeService)
         {
             _placeService = placeService;
             _tagPlaceRepository = tagRepository;
+            _listeService = listeService;
         }
 
         /// <summary>
@@ -72,47 +76,44 @@ namespace MiniProjet.Controllers
         /// <summary>
         /// Ajouter un nouveau lieu.
         /// </summary>
-        /// <param name="place">Les informations du lieu à créer.</param>
+        /// <param name="dto">Les informations du lieu à créer.</param>
         /// <returns>Le lieu créé.</returns>
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Créer un lieu", Description = "Ajoute un nouveau lieu à la base de données. Accessible uniquement aux administrateurs.")]
-        [ProducesResponseType(typeof(object), 201)] // Succès
-        [ProducesResponseType(typeof(object), 400)] // Mauvaise requête (données invalides)
-        [ProducesResponseType(typeof(object), 401)] // Non authentifié
-        [ProducesResponseType(typeof(object), 403)] // Non autorisé (non admin)
-        public async Task<ActionResult<Place>> Create([FromBody] Place place)
+        [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult> Create([FromBody] CreatePlaceDTO dto)
         {
-            if (place == null || place.Tags == null || place.Tags.Count == 0)
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Les informations du lieu ou les tags sont invalides." });
+                return BadRequest(ModelState);
             }
 
-            var validatedTags = new List<string>(); // Liste des tags validés (déjà existants ou nouvellement créés)
+            var validatedTags = new List<string>();
 
-            foreach (var tag in place.Tags)
+            foreach (var tag in dto.Tags)
             {
                 var existingTag = await _tagPlaceRepository.GetByLibelleAsync(tag);
                 if (existingTag == null)
                 {
-                    // Si le tag n'existe pas, on le crée et on l'ajoute à la base de données
                     var newTag = new TagPlace { Libelle = tag };
                     await _tagPlaceRepository.CreateAsync(newTag);
                     validatedTags.Add(tag);
                 }
                 else
                 {
-                    // Si le tag existe, on l'ajoute directement à la liste validée
                     validatedTags.Add(existingTag.Libelle);
                 }
             }
 
-            // Mise à jour des tags validés dans l'objet place
-            place.Tags = validatedTags;
+            dto.Tags = validatedTags;
 
             try
             {
-                var createdPlace = await _placeService.CreatePlaceAsync(place);
+                var createdPlace = await _placeService.CreatePlaceAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = createdPlace.Id }, new { message = "Lieu créé avec succès.", data = createdPlace });
             }
             catch (Exception ex)
@@ -122,42 +123,68 @@ namespace MiniProjet.Controllers
         }
 
 
+
         /// <summary>
         /// Mettre à jour un lieu existant.
         /// </summary>
         /// <param name="id">L'ID du lieu à mettre à jour.</param>
-        /// <param name="place">Les nouvelles informations du lieu.</param>
+        /// <param name="dto">Les nouvelles informations du lieu.</param>
         /// <returns>Un message de succès ou d'erreur.</returns>
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         [SwaggerOperation(Summary = "Mettre à jour un lieu", Description = "Modifie les informations d'un lieu existant.")]
-        [SwaggerResponse(200, "Succès : Lieu mis à jour avec succès.")]
-        [SwaggerResponse(400, "Échec : ID invalide ou données incorrectes.")]
-        [SwaggerResponse(404, "Échec : Lieu non trouvé.")]
-        public async Task<IActionResult> Update(string id, [FromBody] Place place)
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Update(string id, [FromBody] UpdatePlaceDTO dto)
         {
-            Console.WriteLine($"Tentative de mise à jour du lieu avec l'ID : {id}");
-
-            if (place == null)
-            {
-                return BadRequest(new { message = "Les données du lieu sont invalides." });
-            }
-
-            if (!ObjectId.TryParse(id, out ObjectId objectId))
+            if (!ObjectId.TryParse(id, out _))
             {
                 return BadRequest(new { message = "L'ID fourni n'est pas valide." });
             }
 
-            place.Id = objectId.ToString();
-
-            bool updated = await _placeService.UpdateAsync(id, place);
-            if (!updated)
+            if (!ModelState.IsValid)
             {
-                return NotFound(new { message = "Le lieu n'a pas été trouvé ou aucune mise à jour nécessaire." });
+                return BadRequest(ModelState);
             }
 
-            return Ok(new { message = "Lieu mis à jour avec succès !" });
+            var existingPlace = await _placeService.GetPlaceByIdAsync(id);
+            if (existingPlace == null)
+            {
+                return NotFound(new { message = "Lieu non trouvé avec cet ID." });
+            }
+
+            // Vérifier les tags
+            var validatedTags = new List<string>();
+
+            foreach (var tag in dto.Tags ?? new List<string>())
+            {
+                var existingTag = await _tagPlaceRepository.GetByLibelleAsync(tag);
+                if (existingTag == null)
+                {
+                    var newTag = new TagPlace { Libelle = tag };
+                    await _tagPlaceRepository.CreateAsync(newTag);
+                    validatedTags.Add(tag);
+                }
+                else
+                {
+                    validatedTags.Add(existingTag.Libelle);
+                }
+            }
+
+            dto.Tags = validatedTags;
+
+            try
+            {
+                await _placeService.UpdatePlaceAsync(id, dto);
+                return Ok(new { message = "Lieu mis à jour avec succès." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Une erreur interne est survenue lors de la mise à jour du lieu.", details = ex.Message });
+            }
         }
+
 
         /// <summary>
         /// Supprimer un lieu existant.
@@ -166,10 +193,11 @@ namespace MiniProjet.Controllers
         /// <returns>Un message de confirmation.</returns>
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        [SwaggerOperation(Summary = "Supprimer un lieu", Description = "Supprime un lieu en fonction de son identifiant.")]
+        [SwaggerOperation(Summary = "Supprimer un lieu", Description = "Supprime un lieu et le retire de toutes les listes associées.")]
         [SwaggerResponse(200, "Succès : Lieu supprimé avec succès.")]
         [SwaggerResponse(400, "Échec : ID invalide.")]
         [SwaggerResponse(404, "Échec : Lieu non trouvé.")]
+        [SwaggerResponse(500, "Erreur interne du serveur.")]
         public async Task<IActionResult> Delete(string id)
         {
             if (!ObjectId.TryParse(id, out _))
@@ -178,16 +206,27 @@ namespace MiniProjet.Controllers
             }
 
             var place = await _placeService.GetPlaceByIdAsync(id);
-            Console.WriteLine($"place: {place}");
-
             if (place == null)
             {
                 return NotFound(new { message = "Erreur : Le lieu avec cet ID n'existe pas." });
             }
 
-            await _placeService.DeletePlaceAsync(id);
-            return Ok(new { message = $"Succès : Le lieu avec l'ID {id} a été supprimé." });
+            try
+            {
+                // 🔥 Supprimer le lieu de la base de données
+                await _placeService.DeletePlaceAsync(id);
+
+                // 🧹 Nettoyer les références dans les listes
+                await _listeService.RemovePlaceFromAllListsAsync(id);
+
+                return Ok(new { message = $"Succès : Le lieu avec l'ID {id} a été supprimé ainsi que toutes ses références dans les listes." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erreur lors de la suppression du lieu.", details = ex.Message });
+            }
         }
+
 
 
         //get by category

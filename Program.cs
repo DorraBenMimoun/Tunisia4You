@@ -7,6 +7,7 @@ using MiniProjet.Repositories;
 using MiniProjet.Services;
 using MongoDB.Driver;
 using Microsoft.OpenApi.Models;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,14 @@ builder.Services.AddScoped<TagRepository>();
 builder.Services.AddScoped<TagService>();
 builder.Services.AddScoped<ReviewRepository>();
 builder.Services.AddScoped<ReviewService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<ListeRepository>();
+builder.Services.AddScoped<ListeService>();
+
+
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddScoped<EmailService>();
+
 
 // 📌 Ajout de JwtHelper pour la gestion des tokens
 builder.Services.AddSingleton<JwtHelper>();
@@ -52,6 +61,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(key)
         };
     });
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
 
 // 📌 Autorisation
 builder.Services.AddAuthorization();

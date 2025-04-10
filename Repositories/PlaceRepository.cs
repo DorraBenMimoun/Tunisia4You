@@ -61,5 +61,12 @@ namespace MiniProjet.Repositories
             return await _placesCollection.Find(place => place.Name == name).ToListAsync();
         }
 
+        public async Task RemoveTagFromAllPlacesAsync(string tag)
+        {
+            var update = Builders<Place>.Update.Pull(p => p.Tags, tag);
+            await _placesCollection.UpdateManyAsync(p => p.Tags.Contains(tag), update);
+        }
+
+
     }
 }

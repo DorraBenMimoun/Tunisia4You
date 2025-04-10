@@ -5,6 +5,7 @@ using MiniProjet.Repositories;
 using BCrypt.Net;
 using System.Threading.Tasks;
 using Swashbuckle.AspNetCore.Annotations;
+using MiniProjet.DTOs;
 
 namespace MiniProjet.Controllers
 {
@@ -30,16 +31,21 @@ namespace MiniProjet.Controllers
         [SwaggerOperation(Summary = "Inscription d'un utilisateur", Description = "Crée un nouvel utilisateur avec un mot de passe haché.")]
         [SwaggerResponse(200, "Utilisateur enregistré avec succès", typeof(object))]
         [SwaggerResponse(400, "Nom d'utilisateur déjà existant", typeof(string))]
-        public async Task<IActionResult> Register([FromBody] User user)
+        public async Task<IActionResult> Register([FromBody] CreateUserDTO userDto)
         {
-            var existingUser = await _userRepository.GetByUsernameAsync(user.Username);
+            var existingUser = await _userRepository.GetByUsernameAsync(userDto.Username);
             if (existingUser != null)
             {
                 return BadRequest("Username already exists.");
             }
+            // Mapper manuellement ou utiliser AutoMapper plus tard 😉
+            var user = new User
+            {
+                Username = userDto.Username,
+                Email = userDto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDto.PasswordHash),
+            };
 
-            // Hash du mot de passe
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
 
             await _userRepository.CreateAsync(user);
             return Ok(new { message = "User registered successfully" });
@@ -54,7 +60,7 @@ namespace MiniProjet.Controllers
         [SwaggerOperation(Summary = "Connexion utilisateur", Description = "Vérifie les identifiants et renvoie un token JWT ainsi que les détails de l'utilisateur si valide.")]
         [SwaggerResponse(200, "Connexion réussie, retour du token et des détails utilisateur", typeof(object))]
         [SwaggerResponse(401, "Identifiants invalides", typeof(string))]
-        public async Task<IActionResult> Login([FromBody] User user)
+        public async Task<IActionResult> Login([FromBody] LoginDTO user)
         {
             // Vérifier si l'utilisateur existe
             var existingUser = await _userRepository.GetByUsernameAsync(user.Username);
@@ -66,7 +72,7 @@ namespace MiniProjet.Controllers
             Console.WriteLine($"existingUser : {existingUser.Username}");
 
             // Vérification du mot de passe
-            if (!BCrypt.Net.BCrypt.Verify(user.PasswordHash, existingUser.PasswordHash))
+            if (!BCrypt.Net.BCrypt.Verify(user.Password, existingUser.PasswordHash))
             {
                 return Unauthorized(new { message = "Identifiants invalides. Le mot de passe est incorrect." });
             }

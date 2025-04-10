@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniProjet.DTOs;
 using MiniProjet.Models;
 using MiniProjet.Services;
 using MongoDB.Bson;
@@ -57,21 +58,36 @@ namespace MiniProjet.Controllers
         [HttpPost]
         [Authorize]
         [SwaggerOperation(Summary = "Créer une liste", Description = "Ajoute une nouvelle liste après validation.")]
-        [ProducesResponseType(201)]
-        [ProducesResponseType(400)]
-        public async Task<IActionResult> Create([FromBody] Liste liste)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Create([FromBody] CreateListeDTO createListeDto)
         {
-
-            // Vérifier si les champs obligatoires sont présents
-            if (string.IsNullOrWhiteSpace(liste.Nom) || string.IsNullOrWhiteSpace(liste.CreateurId))
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Le nom et l'identifiant du créateur sont obligatoires." });
+                return BadRequest(ModelState);
             }
-            Console.WriteLine(" liste", liste);
+
             try
             {
-                await _listeService.CreateAsync(liste);
-                return CreatedAtAction(nameof(GetById), new { id = liste.Id }, liste);
+                // Vérifier si une liste avec le même nom existe déjà
+                var existingListe = await _listeService.GetByNameAsync(createListeDto.Nom);
+                if (existingListe != null)
+                {
+                    return BadRequest(new { message = "Une liste avec ce nom existe déjà." });
+                }
+
+                var newListe = new CreateListeDTO
+                {
+                    Nom = createListeDto.Nom,
+                    Description = createListeDto.Description,
+                    IsPrivate = createListeDto.IsPrivate,
+                    CreateurId = createListeDto.CreateurId,
+                    LieuxIds = createListeDto.LieuxIds ?? new List<string>(),
+
+                };
+
+                await _listeService.CreateAsync(newListe);
+                return CreatedAtAction(nameof(GetById), new { message = "Liste créée avec succès.", data = newListe });
             }
             catch (Exception ex)
             {
@@ -80,30 +96,30 @@ namespace MiniProjet.Controllers
         }
 
 
+
+
         /// <summary>
         /// Mettre à jour une liste existante.
         /// </summary>
         [HttpPut("{id}")]
         [Authorize]
         [SwaggerOperation(Summary = "Mettre à jour une liste", Description = "Modifie une liste existante en fonction de son ID.")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
-        public async Task<IActionResult> Update(string id, [FromBody] Liste liste)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateListeDTO updateListeDto)
         {
-            if (liste == null)
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Les données de la liste sont invalides ou absentes." });
+                return BadRequest(ModelState);
             }
 
-            // Vérifier si l'ID est valide
             if (!ObjectId.TryParse(id, out _))
             {
                 return BadRequest(new { message = "L'ID fourni n'est pas valide." });
             }
 
-            // Vérifier si la liste existe dans la base de données
             var existingListe = await _listeService.GetByIdAsync(id);
             if (existingListe == null)
             {
@@ -112,18 +128,10 @@ namespace MiniProjet.Controllers
 
             try
             {
-                // Mise à jour des champs non fournis avec leurs anciennes valeurs
-                liste.Id = existingListe.Id;
-                liste.CreatedAt = existingListe.CreatedAt; // Ne pas modifier la date de création
-                liste.UpdatedAt = DateTime.UtcNow; // Mettre à jour la date de modification
-                liste.Nom = string.IsNullOrWhiteSpace(liste.Nom) ? existingListe.Nom : liste.Nom;
-                liste.Description = string.IsNullOrWhiteSpace(liste.Description) ? existingListe.Description : liste.Description;
-                liste.IsPrivate = liste.IsPrivate; // Si non fourni, la valeur actuelle est conservée
-                liste.CreateurId = existingListe.CreateurId; // L'ID du créateur ne change pas
-                liste.LieuxIds = liste.LieuxIds ?? existingListe.LieuxIds; // Conserver les lieux si non fournis
+              
 
-                await _listeService.UpdateAsync(id, liste);
-                return Ok(new { message = "Liste mise à jour avec succès.", data = liste });
+                await _listeService.UpdateAsync(id, updateListeDto);
+                return Ok(new { message = "Liste mise à jour avec succès.", data = existingListe });
             }
             catch (Exception ex)
             {

@@ -5,6 +5,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using BCrypt.Net;
 using MiniProjet.Repositories;
+using MiniProjet.DTOs;
 
 namespace MiniProjet.Services
 {
@@ -38,56 +39,38 @@ namespace MiniProjet.Services
             await _userRepository.CreateAsync(user);
             return user;
         }
+        public async Task<User> CreateUserAsync(CreateUserDTO dto)
+        {
+            var user = new User
+            {
+                Username = dto.Username,
+                Email = dto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.PasswordHash),
+                IsAdmin = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.CreateAsync(user);
+            return user;
+        }
+
 
         // 🔹 Mettre à jour un utilisateur
-        public async Task<bool> UpdateUserAsync(string id, User user)
+        public async Task<bool> UpdateUserAsync(string id, UpdateUserDTO dto)
         {
-            if (!ObjectId.TryParse(id, out ObjectId objectId)) // Validation correcte de l'ID
+            var existingUser = await _userRepository.GetByIdAsync(id);
+            if (existingUser == null) return false;
+
+            existingUser.Username = dto.Username ?? existingUser.Username;
+            existingUser.Email = dto.Email ?? existingUser.Email;
+            if (!string.IsNullOrEmpty(dto.PasswordHash))
             {
-                throw new FormatException("L'ID fourni n'est pas un ObjectId valide.");
+                existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.PasswordHash);
             }
+            existingUser.IsAdmin = dto.IsAdmin ?? existingUser.IsAdmin;
 
-            var existingUser = await _usersCollection.Find(u => u.Id == objectId.ToString()).FirstOrDefaultAsync();
-
-            if (existingUser == null)
-            {
-                return false; // L'utilisateur n'existe pas
-            }
-
-            var updateDefinition = new List<UpdateDefinition<User>>();
-
-            // Mise à jour des champs uniquement s'ils sont fournis
-            if (!string.IsNullOrWhiteSpace(user.Username))
-            {
-                updateDefinition.Add(Builders<User>.Update.Set(u => u.Username, user.Username));
-            }
-            if (!string.IsNullOrWhiteSpace(user.Email))
-            {
-                updateDefinition.Add(Builders<User>.Update.Set(u => u.Email, user.Email));
-            }
-            if (user.IsAdmin != existingUser.IsAdmin) // Vérifier si l'admin a changé
-            {
-                updateDefinition.Add(Builders<User>.Update.Set(u => u.IsAdmin, user.IsAdmin));
-            }
-            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
-            {
-                string hashedPassword = HashPassword(user.PasswordHash);
-
-                updateDefinition.Add(Builders<User>.Update.Set(u => u.PasswordHash, hashedPassword));
-            }
-
-            // Vérifier s'il y a des modifications à faire
-            if (updateDefinition.Count == 0)
-            {
-                return false; // Rien à mettre à jour
-            }
-
-            var updateResult = await _usersCollection.UpdateOneAsync(
-                Builders<User>.Filter.Eq(u => u.Id, objectId.ToString()),
-                Builders<User>.Update.Combine(updateDefinition)
-            );
-
-            return updateResult.ModifiedCount > 0;
+            await _userRepository.UpdateAsync(id, existingUser);
+            return true;
         }
 
         // Fonction de hashage du mot de passe avec BCrypt
@@ -105,6 +88,37 @@ namespace MiniProjet.Services
             return result.DeletedCount > 0;
         }
 
+        public async Task<User> GetUserByEmailAsync(string email)
+        {
+            return await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
+        }
+
+        public async Task SetResetTokenAsync(User user, string token)
+        {
+            var update = Builders<User>.Update
+                .Set(u => u.ResetPasswordToken, token)
+                .Set(u => u.ResetPasswordTokenExpires, DateTime.UtcNow.AddHours(1));
+
+            await _usersCollection.UpdateOneAsync(u => u.Id == user.Id, update);
+        }
+
+        public async Task<User> GetUserByResetTokenAsync(string token)
+        {
+            return await _usersCollection.Find(u =>
+                u.ResetPasswordToken == token &&
+                u.ResetPasswordTokenExpires > DateTime.UtcNow
+            ).FirstOrDefaultAsync();
+        }
+
+        public async Task ResetPasswordAsync(User user, string newPassword)
+        {
+            var update = Builders<User>.Update
+                .Set(u => u.PasswordHash, BCrypt.Net.BCrypt.HashPassword(newPassword))
+                .Set(u => u.ResetPasswordToken, null)
+                .Set(u => u.ResetPasswordTokenExpires, null);
+
+            await _usersCollection.UpdateOneAsync(u => u.Id == user.Id, update);
+        }
 
     }
 }

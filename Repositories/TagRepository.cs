@@ -60,8 +60,5 @@ namespace MiniProjet.Repositories
             await _tags.DeleteOneAsync(tag => tag.Id == id);
         }
 
-
-
-      
     }
 }

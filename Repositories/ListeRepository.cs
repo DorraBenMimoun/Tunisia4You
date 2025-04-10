@@ -144,6 +144,10 @@ namespace MiniProjet.Repositories
             return result;
         }
 
+        public async Task UpdateManyAsync(UpdateDefinition<Liste> update)
+        {
+            await _listes.UpdateManyAsync(Builders<Liste>.Filter.Empty, update);
+        }
 
 
 

@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniProjet.DTOs;
 using MiniProjet.Models;
 using MiniProjet.Services;
 using MongoDB.Bson;
@@ -14,10 +15,15 @@ namespace MiniProjet.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly EmailService _emailService;
+        private readonly ListeService _listeService;
 
-        public UserController(UserService userService)
+
+        public UserController(UserService userService, EmailService emailService, ListeService listeService)
         {
             _userService = userService;
+            _emailService = emailService;
+            _listeService = listeService;
         }
 
         // 🔹 Récupérer tous les utilisateurs
@@ -71,7 +77,7 @@ namespace MiniProjet.Controllers
         [SwaggerResponse(200, "Succès : Mise à jour réussie.")]
         [SwaggerResponse(400, "Échec : ID invalide ou données incorrectes.")]
         [SwaggerResponse(404, "Échec : Utilisateur non trouvé.")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] User user)
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDTO user)
         {
             Console.WriteLine("Mise à jour de l'utilisateur en cours...");
 
@@ -85,7 +91,6 @@ namespace MiniProjet.Controllers
                 return BadRequest(new { message = "L'ID fourni est invalide." });
             }
 
-            user.Id = objectId.ToString();
 
             bool updated = await _userService.UpdateUserAsync(id, user);
 
@@ -100,8 +105,8 @@ namespace MiniProjet.Controllers
         // 🔹 Supprimer un utilisateur
         [HttpDelete("{id}")]
         [Authorize]
-        [SwaggerOperation(Summary = "Supprimer un utilisateur", Description = "Supprime un utilisateur en fonction de son identifiant.")]
-        [SwaggerResponse(200, "Succès : L'utilisateur a été supprimé.")]
+        [SwaggerOperation(Summary = "Supprimer un utilisateur", Description = "Supprime un utilisateur et toutes ses listes associées.")]
+        [SwaggerResponse(200, "Succès : L'utilisateur et ses listes ont été supprimés.")]
         [SwaggerResponse(400, "Échec : ID invalide.")]
         [SwaggerResponse(404, "Échec : Utilisateur non trouvé.")]
         public async Task<IActionResult> DeleteUser(string id)
@@ -113,9 +118,61 @@ namespace MiniProjet.Controllers
             if (user == null)
                 return NotFound(new { message = "Erreur : L'utilisateur avec cet ID n'existe pas." });
 
-            await _userService.DeleteUserAsync(objectId);
+            try
+            {
+                // Supprimer les listes associées à l'utilisateur
+                var listes = await _listeService.GetByCreateurIdAsync(id);
+                if (listes.Any())
+                {
+                    foreach (var liste in listes)
+                    {
+                        await _listeService.DeleteAsync(liste.Id);
+                    }
+                    Console.WriteLine($"Listes associées à l'utilisateur {id} supprimées avec succès.");
+                }
 
-            return Ok(new { message = $"Succès : L'utilisateur avec l'ID {id} a été supprimé." });
+                // Supprimer l'utilisateur
+                await _userService.DeleteUserAsync(objectId);
+
+                return Ok(new { message = $"Succès : L'utilisateur avec l'ID {id} et ses listes associées ont été supprimés." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erreur lors de la suppression de l'utilisateur et de ses listes.", details = ex.Message });
+            }
         }
+
+
+        [HttpPost("forgot-password")]
+        [SwaggerOperation(Summary = "Demander une réinitialisation du mot de passe", Description = "Envoie un e-mail avec le lien de réinitialisation.")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _userService.GetUserByEmailAsync(request.Email);
+            if (user == null)
+                return NotFound(new { message = "Aucun utilisateur trouvé avec cet e-mail." });
+
+            var resetToken = Guid.NewGuid().ToString();
+            await _userService.SetResetTokenAsync(user, resetToken);
+
+            var resetLink = $"http://localhost:5066/reset-password?token={resetToken}";
+            await _emailService.SendEmailAsync(user.Email, "Réinitialisation de mot de passe", $"Cliquez ici pour réinitialiser votre mot de passe : {resetLink}");
+
+            return Ok(new { message = "E-mail de réinitialisation envoyé avec succès." });
+        }
+
+
+        [HttpPost("reset-password")]
+        [SwaggerOperation(Summary = "Réinitialiser le mot de passe", Description = "Réinitialise le mot de passe avec le token fourni.")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest model)
+        {
+            var user = await _userService.GetUserByResetTokenAsync(model.Token);
+            if (user == null)
+                return BadRequest(new { message = "Token invalide ou expiré." });
+
+            await _userService.ResetPasswordAsync(user, model.NewPassword);
+
+            return Ok(new { message = "Mot de passe réinitialisé avec succès." });
+        }
+
     }
 }

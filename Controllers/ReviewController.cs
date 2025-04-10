@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniProjet.DTOs;
 using MiniProjet.Models;
 using MiniProjet.Services;
 using MongoDB.Bson;
@@ -93,37 +94,54 @@ namespace MiniProjet.Controllers
         /// <summary>
         /// Créer une nouvelle review.
         /// </summary>
+        /// <summary>
+        /// Créer une nouvelle review.
+        /// </summary>
         [HttpPost]
         [Authorize]
         [SwaggerOperation(Summary = "Créer une review", Description = "Ajoute un nouvel avis à la base de données.")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] Review review)
+        public async Task<IActionResult> Create([FromBody] CreateReviewDTO dto)
         {
-            if (review == null || string.IsNullOrWhiteSpace(review.Commentaire) || review.Note < 0)
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Les informations de la review sont invalides." });
+                return BadRequest(ModelState);
             }
 
-            await _reviewService.CreateReviewAsync(review);
-            return CreatedAtAction(nameof(GetById), new { id = review.Id }, new { message = "Avis créé avec succès.", data = review });
+            try
+            {
+                var createdReview = await _reviewService.CreateReviewAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = createdReview.Id }, new { message = "Avis créé avec succès.", data = createdReview });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Une erreur est survenue lors de la création de l'avis.", details = ex.Message });
+            }
         }
 
+        /// <summary>
+        /// Mettre à jour une review existante.
+        /// </summary>
         /// <summary>
         /// Mettre à jour une review existante.
         /// </summary>
         [HttpPut("{id}")]
         [Authorize]
         [SwaggerOperation(Summary = "Mettre à jour une review", Description = "Met à jour les informations d'une review existante.")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(string id, [FromBody] Review review)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateReviewDTO dto)
         {
-          
-            if (!ObjectId.TryParse(id, out ObjectId objectId))
+            if (!ObjectId.TryParse(id, out _))
             {
                 return BadRequest(new { message = "L'ID fourni n'est pas valide." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
             }
 
             var existingReview = await _reviewService.GetReviewByIdAsync(id);
@@ -131,10 +149,16 @@ namespace MiniProjet.Controllers
             {
                 return NotFound(new { message = $"Review avec l'ID {id} introuvable." });
             }
-            review.Id = objectId.ToString();
 
-            await _reviewService.UpdateReviewAsync(id, review);
-            return Ok(new { message = "Avis mis à jour avec succès.", data = review });
+            try
+            {
+                await _reviewService.UpdateReviewAsync(id, dto);
+                return Ok(new { message = "Avis mis à jour avec succès.", data = existingReview });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Une erreur est survenue lors de la mise à jour de l'avis.", details = ex.Message });
+            }
         }
 
         /// <summary>
