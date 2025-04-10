@@ -223,7 +223,7 @@ namespace MiniProjet.Controllers
 
         //get by tag
         [HttpGet("tag/{tag}")]
-        [SwaggerOperation(Summary = "Récupérer les lieux par tag", Description = "Retourne la liste des lieux en fonction de leur tag.")]
+        [SwaggerOperation(Summary = "Récupérer les lieux par tags", Description = "Retourne la liste des lieux en fonction de leur tag.")]
         [SwaggerResponse(200, "Succès : Liste des lieux retournée.", typeof(List<Place>))]
         [SwaggerResponse(404, "Échec : Aucun lieu trouvé.")]
         public async Task<ActionResult<List<Place>>> GetByTag(string tag)
