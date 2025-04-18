@@ -71,7 +71,7 @@ namespace MiniProjet.Controllers
                 return NotFound(new { message = $"Aucun lieu trouvé avec l'ID {id}." });
             }
 
-            return Ok(new { message = "Lieu trouvé avec succès.", data = place });
+            return Ok(new { data =place });
         }
 
         /// <summary>
