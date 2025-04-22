@@ -8,6 +8,10 @@ using MiniProjet.Services;
 using MongoDB.Driver;
 using Microsoft.OpenApi.Models;
 using AutoMapper;
+using Microsoft.Extensions.FileProviders;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +40,7 @@ builder.Services.AddScoped<ReviewService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<ListeRepository>();
 builder.Services.AddScoped<ListeService>();
+builder.Services.AddScoped<ImageService>();
 
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
@@ -126,6 +131,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseStaticFiles(); // nécessaire pour wwwroot
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -11,12 +11,15 @@ namespace MiniProjet.Services
     {
         private readonly PlaceRepository _placeRepository;
         private readonly IMongoCollection<Place> _placesCollection; // Référence à la collection MongoDB
+        private readonly ImageService _imageService; // Service pour gérer les images
 
-        public PlaceService(IMongoClient mongoClient, PlaceRepository placeRepository)
+        public PlaceService(IMongoClient mongoClient, PlaceRepository placeRepository, ImageService imageService)
         {
             var database = mongoClient.GetDatabase("MiniProjet");
             _placesCollection = database.GetCollection<Place>("places");
             _placeRepository = placeRepository;
+            _imageService = imageService;
+
         }
 
 
@@ -32,6 +35,9 @@ namespace MiniProjet.Services
 
         public async Task<Place> CreatePlaceAsync(CreatePlaceDTO dto)
         {
+
+            var imageUrls = dto.Images != null ? await _imageService.SaveImagesAsync(dto.Images) : new List<string>();
+
             var place = new Place
             {
                 Name = dto.Name,
@@ -44,7 +50,7 @@ namespace MiniProjet.Services
                 PhoneNumber = dto.PhoneNumber,
                 OpeningHours = dto.OpeningHours,
                 Tags = dto.Tags ?? new List<string>(),
-                Images = dto.Images ?? new List<string>(),
+                Images = imageUrls,
                 AverageRating = 0,
                 ReviewCount = 0
             };
