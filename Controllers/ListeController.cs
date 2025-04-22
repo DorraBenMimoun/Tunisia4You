@@ -209,12 +209,6 @@ namespace MiniProjet.Controllers
 
                 // Récupérer les listes créées par l'utilisateur
                 var listes = await _listeService.GetByCreateurIdAsync(createurId);
-
-                if (listes == null || listes.Count == 0)
-                {
-                    return NotFound(new { message = $"Aucune liste trouvée pour l'utilisateur avec l'ID {createurId}." });
-                }
-
                 return Ok(new { message = $"Listes récupérées avec succès pour l'utilisateur {createurId}.", data = listes });
             }
             catch (Exception ex)
