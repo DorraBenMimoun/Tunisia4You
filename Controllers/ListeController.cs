@@ -147,7 +147,6 @@ namespace MiniProjet.Controllers
         /// Supprimer une liste par son ID.
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize]
         [SwaggerOperation(Summary = "Supprimer une liste", Description = "Supprime une liste par son ID.")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
@@ -155,6 +154,8 @@ namespace MiniProjet.Controllers
         [ProducesResponseType(500)]
         public async Task<IActionResult> Delete(string id)
         {
+
+    
             // Vérifier si l'ID est valide
             if (!ObjectId.TryParse(id, out ObjectId objectId))
             {
@@ -166,6 +167,21 @@ namespace MiniProjet.Controllers
             if (existingListe == null)
             {
                 return NotFound(new { message = $"Aucune liste trouvée avec l'ID {id}." });
+            }
+
+            try {
+                // Vérifier si l'utilisateur a le droit de supprimer la liste
+                var user = HttpContext.Items["User"] as User;
+
+         
+                if (user == null || user.Id != existingListe.CreateurId)
+                {
+                return StatusCode(403, new { message = "Vous n'avez pas l'autorisation de supprimer cette liste." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erreur lors de la vérification des autorisations.", details = ex.Message });
             }
 
             try
