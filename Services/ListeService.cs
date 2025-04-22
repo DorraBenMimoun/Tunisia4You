@@ -28,23 +28,26 @@ namespace MiniProjet.Services
             return await _listeRepository.GetByIdAsync(id);
         }
 
-        // Ajouter une nouvelle liste
-        public async Task<Liste> CreateAsync(CreateListeDTO dto)
-        {
-            var liste = new Liste
-            {
-                Nom = dto.Nom,
-                Description = dto.Description,
-                IsPrivate = dto.IsPrivate,
-                CreateurId = dto.CreateurId,
-                LieuxIds = dto.LieuxIds ?? new List<string>(),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+ public async Task<Liste> CreateAsync(CreateListeDTO dto)
+{
+    var liste = new Liste
+    {
+        Nom = dto.Nom,
+        Description = dto.Description,
+        IsPrivate = dto.IsPrivate,
+        CreateurId = dto.CreateurId,
+        LieuxIds = dto.LieuxIds ?? new List<string>(),
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
 
-            await _listeRepository.CreateAsync(liste);
-            return liste;
-        }
+    // Création dans la base de données
+    await _listeRepository.CreateAsync(liste);
+
+    // Après création, l'ID doit être assigné, donc il sera disponible
+    return liste;
+}
+
 
 
 

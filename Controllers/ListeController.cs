@@ -52,42 +52,42 @@ namespace MiniProjet.Controllers
             return Ok(liste);
         }
 
+
+
         /// <summary>
         /// Ajouter une nouvelle liste.
         /// </summary>
         [HttpPost]
-        [Authorize]
         [SwaggerOperation(Summary = "Créer une liste", Description = "Ajoute une nouvelle liste après validation.")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] CreateListeDTO createListeDto)
+        public async Task<IActionResult> Create([FromBody] CreateListeRequest createListeDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
 
             try
             {
-                // Vérifier si une liste avec le même nom existe déjà
-                var existingListe = await _listeService.GetByNameAsync(createListeDto.Nom);
-                if (existingListe != null)
-                {
-                    return BadRequest(new { message = "Une liste avec ce nom existe déjà." });
-                }
+           var user = HttpContext.Items["User"] as User;
+
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Utilisateur non authentifié." });
+            }
+
+            var userId = user.Id;
+
 
                 var newListe = new CreateListeDTO
                 {
                     Nom = createListeDto.Nom,
                     Description = createListeDto.Description,
                     IsPrivate = createListeDto.IsPrivate,
-                    CreateurId = createListeDto.CreateurId,
-                    LieuxIds = createListeDto.LieuxIds ?? new List<string>(),
+                    CreateurId = userId,
+                    LieuxIds =  new List<string>(),
 
                 };
 
-                await _listeService.CreateAsync(newListe);
-                return CreatedAtAction(nameof(GetById), new { message = "Liste créée avec succès.", data = newListe });
+               var createdListe = await _listeService.CreateAsync(newListe);
+                return CreatedAtAction(nameof(GetById), new { id = createdListe.Id }, new { message = "Liste créée avec succès.", data = createdListe });
             }
             catch (Exception ex)
             {
