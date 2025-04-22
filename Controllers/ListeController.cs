@@ -234,6 +234,8 @@ namespace MiniProjet.Controllers
             }
         }
 
+    
+
         /// <summary>
         /// Récupérer les listes publiques.
         /// </summary>
@@ -332,11 +334,60 @@ namespace MiniProjet.Controllers
             }
         }
 
+
+        /// <summary>
+/// Récupérer les IDs des listes de l'utilisateur authentifié contenant un lieu spécifique.
+/// </summary>
+[HttpGet("me/places/{placeId}")]
+[SwaggerOperation(Summary = "Obtenir les IDs des listes de l'utilisateur contenant un lieu", Description = "Retourne les IDs des listes créées par l'utilisateur authentifié contenant le lieu spécifié.")]
+[ProducesResponseType(typeof(List<string>), 200)]
+[ProducesResponseType(400)]
+[ProducesResponseType(401)]
+[ProducesResponseType(404)]
+[ProducesResponseType(500)]
+public async Task<ActionResult<List<string>>> GetListeIdsByPlaceIdForCurrentUser(string placeId)
+{
+    Console.WriteLine($"[GetListeIdsByPlaceIdForCurrentUser] Requête reçue pour le lieu : {placeId}");
+
+    // Récupérer l'utilisateur depuis le contexte
+    var user = HttpContext.Items["User"] as User;
+    if (user == null)
+    {
+        return Unauthorized(new { message = "Utilisateur non authentifié." });
+    }
+
+    // Vérification de l'ID du lieu
+    if (!ObjectId.TryParse(placeId, out ObjectId objectId))
+    {
+        return BadRequest(new { message = "L'ID du lieu est invalide. Assurez-vous d'utiliser un identifiant MongoDB correct." });
+    }
+
+    try
+    {
+        // Vérifier si le lieu existe
+        var existingPlace = await _placeService.GetPlaceByIdAsync(placeId);
+        if (existingPlace == null)
+        {
+            return NotFound(new { message = $"Aucun lieu trouvé avec l'ID {placeId}." });
+        }
+
+        // Récupérer les listes contenant ce lieu et appartenant à l'utilisateur
+        var listeIds = await _listeService.GetListeIdsByPlaceIdAndCreateurIdAsync(placeId, user.Id);
+
+        return Ok(new { message = "IDs des listes récupérées avec succès.", data = listeIds });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[GetListeIdsByPlaceIdForCurrentUser] ❌ Erreur : {ex.Message}");
+        return StatusCode(500, new { message = "Erreur lors de la récupération des listes contenant ce lieu.", details = ex.Message });
+    }
+}
+
+
         /// <summary>
         /// Ajouter un lieu à une liste.
         /// </summary>
         [HttpPost("{listeId}/places/{placeId}")]
-        [Authorize]
         [SwaggerOperation(Summary = "Ajouter un lieu à une liste", Description = "Ajoute un lieu spécifique à une liste.")]
         [ProducesResponseType(204)]
         public async Task<IActionResult> AddPlace(string listeId, string placeId)
@@ -346,6 +397,8 @@ namespace MiniProjet.Controllers
             {
                 return BadRequest(new { message = "L'ID du liste fourni est invalide. Assurez-vous d'utiliser un identifiant MongoDB correct." });
             }
+
+
 
             // Vérifier si l'ID est valide
             if (!ObjectId.TryParse(placeId, out ObjectId objectIdPlace))
@@ -360,6 +413,14 @@ namespace MiniProjet.Controllers
                 if (existingListe == null)
                 {
                     return NotFound(new { message = $"Aucune liste trouvée avec l'ID {listeId}." });
+                }
+
+                // Vérifier si l'utilisateur a le droit de modifier la liste
+                var user = HttpContext.Items["User"] as User;
+         
+                if (user == null || user.Id != existingListe.CreateurId)
+                {
+                return StatusCode(403, new { message = "Vous n'avez pas l'autorisation de modifier cette liste." });
                 }
 
                 // Vérifier si le lieux existe
@@ -386,7 +447,6 @@ namespace MiniProjet.Controllers
         /// Supprimer un lieu d'une liste.
         /// </summary>
         [HttpDelete("{listeId}/places/{placeId}")]
-        [Authorize]
         [SwaggerOperation(Summary = "Supprimer un lieu d'une liste", Description = "Supprime un lieu spécifique d'une liste.")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -403,6 +463,14 @@ namespace MiniProjet.Controllers
                 if (existingListe == null)
                 {
                     return NotFound(new { message = "Liste introuvable. Vérifiez l'ID de la liste." });
+                }
+
+                // Vérifier si l'utilisateur a le droit de modifier la liste
+                var user = HttpContext.Items["User"] as User;
+         
+                if (user == null || user.Id != existingListe.CreateurId)
+                {
+                return StatusCode(403, new { message = "Vous n'avez pas l'autorisation de modifier cette liste." });
                 }
 
                 // Vérifier si le lieu existe dans la liste

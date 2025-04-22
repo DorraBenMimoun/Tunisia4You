@@ -67,12 +67,31 @@ namespace MiniProjet.Services
             return true;
         }
 
+        
+
+
 
         // Supprimer une liste par son ID
         public async Task DeleteAsync(string id)
         {
             await _listeRepository.DeleteAsync(id);
         }
+
+        // Récupérer les IDs des listes de l'utilisateur authentifié contenant un lieu spécifique
+public async Task<List<string>> GetListeIdsByPlaceIdAndCreateurIdAsync(string placeId, string createurId)
+{
+    // Récupérer toutes les listes créées par l'utilisateur
+    var listes = await _listeRepository.GetByCreateurIdAsync(createurId);
+
+    // Filtrer les listes qui contiennent le lieu spécifié
+    var listeIds = listes
+        .Where(l => l.LieuxIds.Contains(placeId))
+        .Select(l => l.Id.ToString()) // Assurez-vous que l'ID est correctement transformé en string
+        .ToList();
+
+    return listeIds;
+}
+
 
         // Récupérer les listes créées par un utilisateur donné
         public async Task<List<Liste>> GetByCreateurIdAsync(string createurId)
