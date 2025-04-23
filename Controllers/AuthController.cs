@@ -33,7 +33,7 @@ namespace MiniProjet.Controllers
         [SwaggerResponse(400, "Nom d'utilisateur déjà existant", typeof(string))]
         public async Task<IActionResult> Register([FromBody] CreateUserDTO userDto)
         {
-            var existingUser = await _userRepository.GetByUsernameAsync(userDto.Username);
+            var existingUser = await _userRepository.GetByUsernameAsync(userDto.Username.ToLower());
             if (existingUser != null)
             {
                 return BadRequest("Username already exists.");
@@ -41,7 +41,7 @@ namespace MiniProjet.Controllers
             // Mapper manuellement ou utiliser AutoMapper plus tard 😉
             var user = new User
             {
-                Username = userDto.Username,
+                Username = userDto.Username.ToLower(),
                 Email = userDto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDto.PasswordHash),
             };
@@ -63,7 +63,7 @@ namespace MiniProjet.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDTO user)
         {
             // Vérifier si l'utilisateur existe
-            var existingUser = await _userRepository.GetByUsernameAsync(user.Username);
+            var existingUser = await _userRepository.GetByUsernameAsync(user.Username.ToLower());
             if (existingUser == null)
             {
                 return Unauthorized(new { message = "Identifiants invalides. L'utilisateur n'existe pas." });
