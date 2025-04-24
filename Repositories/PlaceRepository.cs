@@ -46,25 +46,25 @@ namespace MiniProjet.Repositories
 
         public async Task<List<Place>> GetByCategoryAsync(string category)
         {
-            return await _placesCollection.Find(place => place.category == category).ToListAsync();
+            return await _placesCollection.Find(place => place.Category == category).ToListAsync();
         }
 
         //get by tag
         public async Task<List<Place>> GetByTagAsync(string tag)
         {
-            return await _placesCollection.Find(place => place.tags.Contains(tag)).ToListAsync();
+            return await _placesCollection.Find(place => place.Tags.Contains(tag)).ToListAsync();
         }
 
         //get by name
         public async Task<List<Place>> GetByNameAsync(string name)
         {
-            return await _placesCollection.Find(place => place.name == name).ToListAsync();
+            return await _placesCollection.Find(place => place.Name == name).ToListAsync();
         }
 
         public async Task RemoveTagFromAllPlacesAsync(string tag)
         {
-            var update = Builders<Place>.Update.Pull(p => p.tags, tag);
-            await _placesCollection.UpdateManyAsync(p => p.tags.Contains(tag), update);
+            var update = Builders<Place>.Update.Pull(p => p.Tags, tag);
+            await _placesCollection.UpdateManyAsync(p => p.Tags.Contains(tag), update);
         }
 
 

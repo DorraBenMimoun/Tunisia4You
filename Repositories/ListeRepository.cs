@@ -118,7 +118,7 @@ namespace MiniProjet.Repositories
 
                     if (place != null)
                     {
-                        Console.WriteLine($"[GetPlacesAsync] ✅ Lieu trouvé : {place.name}");
+                        Console.WriteLine($"[GetPlacesAsync] ✅ Lieu trouvé : {place.Name}");
                         places.Add(place);
                     }
                   
