@@ -17,73 +17,73 @@ namespace MiniProjet.Models
         [BsonElement("name")]
         [BindRequired]
         [SwaggerSchema("Nom du lieu.")]
-        public string Name { get; set; }
+        public string name { get; set; }
 
         [BsonElement("category")]
         [BindRequired]
         [SwaggerSchema("Catégorie du lieu.")]
-        public string Category { get; set; }
+        public string category { get; set; }
 
         [BsonElement("description")]
         [BindRequired]
         [SwaggerSchema("Brève description du lieu.")]
-        public string Description { get; set; }
+        public string description { get; set; }
 
         [BsonElement("address")]
         [BindRequired]
         [SwaggerSchema("Adresse complète du lieu.")]
-        public string? Address { get; set; }
+        public string? address { get; set; }
 
         [BsonElement("city")]
         [BindRequired]
         [SwaggerSchema("Ville où se situe le lieu.")]
-        public string? City { get; set; }
+        public string? city { get; set; }
 
         [BsonElement("latitude")]
         [BindRequired]
         [SwaggerSchema("Latitude du lieu pour la géolocalisation.")]
-        public double Latitude { get; set; }
+        public double latitude { get; set; }
 
         [BsonElement("longitude")]
         [BindRequired]
         [SwaggerSchema("Longitude du lieu pour la géolocalisation.")]
-        public double Longitude { get; set; }
+        public double longitude { get; set; }
 
         [BsonElement("phoneNumber")]
         [BindRequired]
         [SwaggerSchema("Numéro de téléphone du lieu.")]
 
-        public string? PhoneNumber { get; set; }
+        public string? phoneNumber { get; set; }
 
         [BsonElement("openingHours")]
         [BindRequired]
         [SwaggerSchema("Horaires d'ouverture du lieu.")]
-        public Dictionary<string, string> OpeningHours { get; set; }
+        public Dictionary<string, string> openingHours { get; set; }
 
         [BsonElement("averageRating")]
         [SwaggerSchema("Note moyenne du lieu.")]
-        public double AverageRating { get; set; }
+        public double averageRating { get; set; }
 
         [BsonElement("reviewCount")]
         [SwaggerSchema("Nombre total d'avis reçus.")]
-        public int ReviewCount { get; set; }
+        public int reviewCount { get; set; }
 
         [BsonElement("tags")]
         [BindRequired]
         [SwaggerSchema("Liste de tags associés au lieu.")]
-        public List<string> Tags { get; set; }
+        public List<string> tags { get; set; }
 
         [BsonElement("images")]
         [BindRequired]
         [SwaggerSchema("Liste des URLs des images du lieu.")]
-        public List<string> Images { get; set; }
+        public List<string> images { get; set; }
 
         // Constructeur pour initialiser les listes et dictionnaires
         public Place()
         {
-            Tags = new List<string>();
-            Images = new List<string>();
-            OpeningHours = new Dictionary<string, string>();
+            tags = new List<string>();
+            images = new List<string>();
+            openingHours = new Dictionary<string, string>();
         }
     }
 }

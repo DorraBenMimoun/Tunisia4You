@@ -425,5 +425,22 @@ namespace MiniProjet.Controllers
             var places = await _listeService.GetPlacesAsync(listeId);
             return Ok(places);
         }
+
+        /// <summary>
+        /// Récupérer une liste par son nom.
+        /// </summary>
+
+        [HttpGet("name/{name}")]
+        [SwaggerOperation(Summary = "Obtenir une liste par nom", Description = "Retourne une liste spécifique en fonction de son nom.")]
+        [ProducesResponseType(typeof(List<Liste>), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<List<Liste>>> GetByName(string name)
+        {
+            var liste = await _listeService.GetByNameAsync(name);
+            if (liste == null)
+                return NotFound("Liste non trouvée.");
+            return Ok(liste);
+        }
+       
     }
 }

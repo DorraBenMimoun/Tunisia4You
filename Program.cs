@@ -64,7 +64,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-
 // 📌 Autorisation
 builder.Services.AddAuthorization();
 

@@ -34,19 +34,19 @@ namespace MiniProjet.Services
         {
             var place = new Place
             {
-                Name = dto.Name,
-                Category = dto.Category,
-                Description = dto.Description,
-                Address = dto.Address,
-                City = dto.City,
-                Latitude = dto.Latitude,
-                Longitude = dto.Longitude,
-                PhoneNumber = dto.PhoneNumber,
-                OpeningHours = dto.OpeningHours,
-                Tags = dto.Tags ?? new List<string>(),
-                Images = dto.Images ?? new List<string>(),
-                AverageRating = 0,
-                ReviewCount = 0
+                name = dto.Name,
+                category = dto.Category,
+                description = dto.Description,
+                address = dto.Address,
+                city = dto.City,
+                latitude = dto.Latitude,
+                longitude = dto.Longitude,
+                phoneNumber = dto.PhoneNumber,
+                openingHours = dto.OpeningHours,
+                tags = dto.Tags ?? new List<string>(),
+                images = dto.Images ?? new List<string>(),
+                averageRating = 0,
+                reviewCount = 0
             };
 
             await _placeRepository.CreateAsync(place);
@@ -58,15 +58,15 @@ namespace MiniProjet.Services
             var place = await _placeRepository.GetByIdAsync(id);
             if (place == null) return false;
 
-            place.Name = dto.Name ?? place.Name;
-            place.Category = dto.Category ?? place.Category;
-            place.Description = dto.Description ?? place.Description;
-            place.Address = dto.Address ?? place.Address;
-            place.City = dto.City ?? place.City;
-            place.PhoneNumber = dto.PhoneNumber ?? place.PhoneNumber;
-            place.OpeningHours = dto.OpeningHours ?? place.OpeningHours;
-            place.Tags = dto.Tags ?? place.Tags;
-            place.Images = dto.Images ?? place.Images;
+            place.name = dto.name ?? place.name;
+            place.category = dto.category ?? place.category;
+            place.description = dto.description ?? place.description;
+            place.address = dto.address ?? place.address;
+            place.city = dto.city ?? place.city;
+            place.phoneNumber = dto.phoneNumber ?? place.phoneNumber;
+            place.openingHours = dto.openingHours ?? place.openingHours;
+            place.tags = dto.tags ?? place.tags;
+            place.images = dto.images ?? place.images;
 
             await _placeRepository.UpdateAsync(id, place);
             return true;

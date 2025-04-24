@@ -71,7 +71,7 @@ namespace MiniProjet.Controllers
                 return NotFound(new { message = $"Aucun lieu trouvé avec l'ID {id}." });
             }
 
-            return Ok(new { data =place });
+            return Ok(new { data = place });
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace MiniProjet.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdatePlaceDTO dto)
+        public async Task<IActionResult> Update(string id, [FromForm] UpdatePlaceDTO dto)
         {
             Console.WriteLine($"Update  id : {id}"); // Debugging line
             if (!ObjectId.TryParse(id, out _))
@@ -160,7 +160,7 @@ namespace MiniProjet.Controllers
             // Vérifier les tags
             var validatedTags = new List<string>();
 
-            foreach (var tag in dto.Tags ?? new List<string>())
+            foreach (var tag in dto.tags ?? new List<string>())
             {
                 var existingTag = await _tagPlaceRepository.GetByLibelleAsync(tag);
                 if (existingTag == null)
@@ -175,7 +175,7 @@ namespace MiniProjet.Controllers
                 }
             }
 
-            dto.Tags = validatedTags;
+            dto.tags = validatedTags;
 
             try
             {
@@ -306,11 +306,11 @@ namespace MiniProjet.Controllers
 
             // Filtrage des résultats
             var filteredPlaces = places.Where(p => 
-                (string.IsNullOrEmpty(name) || p.Name.ToLower().Contains(name.ToLower())) &&
-                (string.IsNullOrEmpty(category) || p.Category.ToLower() == category.ToLower()) &&
-                (string.IsNullOrEmpty(city) || p.City?.ToLower() == city.ToLower()) &&
-                (!minRating.HasValue || p.AverageRating >= minRating.Value) &&
-                (string.IsNullOrEmpty(tags) || p.Tags.Any(t => t.ToLower() == tags.ToLower()))
+                (string.IsNullOrEmpty(name) || p.name.ToLower().Contains(name.ToLower())) &&
+                (string.IsNullOrEmpty(category) || p.category.ToLower() == category.ToLower()) &&
+                (string.IsNullOrEmpty(city) || p.city?.ToLower() == city.ToLower()) &&
+                (!minRating.HasValue || p.averageRating >= minRating.Value) &&
+                (string.IsNullOrEmpty(tags) || p.tags.Any(t => t.ToLower() == tags.ToLower()))
             ).ToList();
 
             if (filteredPlaces.Count == 0)

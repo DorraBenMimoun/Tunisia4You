@@ -27,7 +27,7 @@ namespace MiniProjet.Services
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(_smtpSettings.Username),
+                From = new MailAddress(_smtpSettings.FromMail),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = true,
