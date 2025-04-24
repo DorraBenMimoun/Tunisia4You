@@ -174,5 +174,65 @@ namespace MiniProjet.Controllers
             return Ok(new { message = "Mot de passe réinitialisé avec succès." });
         }
 
+
+        [HttpPatch("{id}/ban")]
+        //[Authorize(Roles = "Admin")]
+        [SwaggerOperation(Summary = "Bannir un utilisateur", Description = "Bannit un utilisateur jusqu’à une certaine date.")]
+        public async Task<IActionResult> BannirUtilisateur(string id, [FromBody] DateTime dateFinBannissement)
+        {
+            if (!ObjectId.TryParse(id, out _))
+                return BadRequest(new { message = "ID utilisateur invalide." });
+
+            var success = await _userService.BannirUtilisateurAsync(id, dateFinBannissement);
+            if (!success)
+                return NotFound(new { message = "Utilisateur introuvable." });
+
+            return Ok(new { message = $"Utilisateur banni jusqu’au {dateFinBannissement:yyyy-MM-dd HH:mm:ss}." });
+        }
+
+        [HttpGet("bannis")]
+        //[Authorize(Roles = "Admin")]
+        [SwaggerOperation(Summary = "Lister les utilisateurs bannis", Description = "Retourne tous les utilisateurs encore bannis actuellement.")]
+        [ProducesResponseType(typeof(List<User>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetUtilisateursBannis()
+        {
+            var users = await _userService.GetUtilisateursBannisAsync();
+            return Ok(new { message = "Utilisateurs bannis récupérés avec succès", data = users });
+        }
+
+        /// <summary>
+        /// Vérifie si un utilisateur est banni actuellement.
+        /// </summary>
+        [HttpGet("is-banni/{id}")]
+        //[Authorize(Roles = "Admin")]
+        [SwaggerOperation(Summary = "Vérifier le statut de bannissement", Description = "Retourne true si l'utilisateur est actuellement banni.")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> IsBanni(string id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null)
+                return NotFound(new { message = "Utilisateur introuvable." });
+
+            var isBanni = user.DateFinBannissement.HasValue && user.DateFinBannissement > DateTime.UtcNow;
+            return Ok(new { id = user.Id, isBanni });
+        }
+
+        /// <summary>
+        /// Lister les utilisateurs non bannis.
+        /// </summary>
+        [HttpGet("non-bannis")]
+        //[Authorize(Roles = "Admin")]
+        [SwaggerOperation(Summary = "Lister les utilisateurs non bannis", Description = "Retourne les utilisateurs qui ne sont pas actuellement bannis.")]
+        [ProducesResponseType(typeof(List<User>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetUtilisateursNonBannis()
+        {
+            var users = await _userService.GetUtilisateursNonBannisAsync();
+            return Ok(new { message = "Utilisateurs non bannis récupérés avec succès.", data = users });
+        }
+
+
+
+
     }
 }

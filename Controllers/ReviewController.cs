@@ -98,7 +98,7 @@ namespace MiniProjet.Controllers
         /// Créer une nouvelle review.
         /// </summary>
         [HttpPost]
-        [Authorize]
+        //[Authorize]
         [SwaggerOperation(Summary = "Créer une review", Description = "Ajoute un nouvel avis à la base de données.")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -127,7 +127,7 @@ namespace MiniProjet.Controllers
         /// Mettre à jour une review existante.
         /// </summary>
         [HttpPut("{id}")]
-        [Authorize]
+        //[Authorize]
         [SwaggerOperation(Summary = "Mettre à jour une review", Description = "Met à jour les informations d'une review existante.")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -165,7 +165,7 @@ namespace MiniProjet.Controllers
         /// Supprimer une review.
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize]
+        //[Authorize]
         [SwaggerOperation(Summary = "Supprimer une review", Description = "Supprime une review existante.")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -177,14 +177,11 @@ namespace MiniProjet.Controllers
                 return BadRequest(new { message = "ID de la review invalide." });
             }
 
-            var existingReview = await _reviewService.GetReviewByIdAsync(id);
-            if (existingReview == null)
-            {
-                return NotFound(new { message = $"Review avec l'ID {id} introuvable." });
-            }
+            var deleted = await _reviewService.DeleteReviewAsync(id);
+            if (!deleted)
+                return NotFound(new { message = "Review introuvable." });
 
-            await _reviewService.DeleteReviewAsync(id);
-            return Ok(new { message = "Avis supprimé avec succès." });
+            return Ok(new { message = "Review et signalements supprimés avec succès." });
         }
     }
 }

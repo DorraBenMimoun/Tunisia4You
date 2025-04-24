@@ -44,5 +44,15 @@ namespace MiniProjet.Models
         [BsonElement("resetPasswordTokenExpires")]
         public DateTime? ResetPasswordTokenExpires { get; set; }
 
+        [BsonElement("dateFinBannissement")]
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+        [SwaggerSchema("Date jusqu’à laquelle l’utilisateur est banni.")]
+
+        public DateTime? DateFinBannissement { get; set; }
+
+        [BsonIgnore]
+        [SwaggerSchema("Indique si l'utilisateur est actuellement banni.")]
+        public bool IsBanni => DateFinBannissement.HasValue && DateFinBannissement > DateTime.UtcNow;
+
     }
 }

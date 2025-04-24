@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace MiniProjet.Repositories
 {
-    public class UserRepository : IRepository<User>
+    public class UserRepository
     {
         private readonly IMongoCollection<User> _users;
 
@@ -24,10 +24,25 @@ namespace MiniProjet.Repositories
 
         public async Task CreateAsync(User user) => await _users.InsertOneAsync(user);
 
-        public async Task UpdateAsync(string id, User user) =>
-            await _users.ReplaceOneAsync(u => u.Id == id, user);
+        public async Task<bool> UpdateAsync(string id, User user)
+        {
+            var result = await _users.ReplaceOneAsync(u => u.Id == id, user);
+            return result.ModifiedCount > 0;
+        }
 
         public async Task DeleteAsync(string id) =>
             await _users.DeleteOneAsync(user => user.Id == id);
+
+        public async Task<List<User>> GetUtilisateursBannisAsync()
+        {
+            return await _users.Find(u => u.DateFinBannissement != null && u.DateFinBannissement > DateTime.UtcNow).ToListAsync();
+        }
+
+        internal async Task<List<User>> GetUtilisateursNonBannisAsync()
+        {
+            return await _users.Find(u => u.DateFinBannissement == null).ToListAsync();
+        }
     }
+
+
 }

@@ -77,6 +77,25 @@ namespace MiniProjet.Controllers
                 return Unauthorized(new { message = "Identifiants invalides. Le mot de passe est incorrect." });
             }
 
+            // 💥 Vérifier si l'utilisateur est banni
+            if (existingUser.DateFinBannissement.HasValue)
+            {
+                if (existingUser.DateFinBannissement > DateTime.UtcNow)
+                {
+                    return Unauthorized(new
+                    {
+                        message = $"Ce compte est banni jusqu’au {existingUser.DateFinBannissement.Value:yyyy-MM-dd HH:mm:ss}."
+                    });
+                }
+                else
+                {
+                    // Lever le bannissement automatiquement
+                    existingUser.DateFinBannissement = null;
+                    await _userRepository.UpdateAsync(existingUser.Id, existingUser);
+                }
+            }
+
+
             // Génération du token JWT
             var token = _jwtHelper.GenerateToken(existingUser);
 

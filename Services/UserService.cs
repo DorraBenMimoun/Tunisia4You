@@ -120,5 +120,40 @@ namespace MiniProjet.Services
             await _usersCollection.UpdateOneAsync(u => u.Id == user.Id, update);
         }
 
+        public async Task<bool> BannirUtilisateurAsync(string userId, DateTime dateFin)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+
+            user.DateFinBannissement = dateFin;
+            return await _userRepository.UpdateAsync(userId, user);
+        }
+
+        public async Task<bool> DebannirUtilisateurAsync(string userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+            user.DateFinBannissement = null;
+            return await _userRepository.UpdateAsync(userId, user);
+        }
+        public async Task<bool> IsUserBanniAsync(string userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+            return user.DateFinBannissement.HasValue && user.DateFinBannissement > DateTime.UtcNow;
+        }
+
+
+        public async Task<List<User>> GetUtilisateursBannisAsync()
+        {
+            return await _userRepository.GetUtilisateursBannisAsync();
+        }
+        public async Task<List<User>> GetUtilisateursNonBannisAsync()
+        {
+            return await _userRepository.GetUtilisateursNonBannisAsync();
+        }
+
+
+
     }
 }

@@ -45,6 +45,8 @@ builder.Services.AddScoped<ImageService>();
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<ReportRepository>();
+builder.Services.AddScoped<ReportService>();
 
 
 // 📌 Ajout de JwtHelper pour la gestion des tokens

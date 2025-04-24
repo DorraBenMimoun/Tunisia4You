@@ -9,10 +9,12 @@ namespace MiniProjet.Services
     public class ReviewService
     {
         private readonly ReviewRepository _reviewRepository;
+        private readonly ReportRepository _reportRepository;
 
-        public ReviewService(ReviewRepository reviewRepository)
+        public ReviewService(ReviewRepository reviewRepository, ReportRepository reportRepository)
         {
             _reviewRepository = reviewRepository;
+            _reportRepository = reportRepository;
         }
 
         public async Task<List<Review>> GetAllReviewsAsync()
@@ -64,9 +66,18 @@ namespace MiniProjet.Services
         }
 
 
-        public async Task DeleteReviewAsync(string id)
+        public async Task<bool> DeleteReviewAsync(string id)
         {
+            var existingReview = await _reviewRepository.GetByIdAsync(id);
+            if (existingReview == null) return false;
+
+            // Supprimer la review
             await _reviewRepository.DeleteAsync(id);
+
+            // Supprimer tous les signalements liés à cette review
+            await _reportRepository.DeleteByReviewIdAsync(id);
+
+            return true;
         }
     }
 }
