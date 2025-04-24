@@ -19,48 +19,56 @@ namespace MiniProjet.Middleware
         }
 
         // Cette méthode est appelée à chaque requête HTTP
-        public async Task Invoke(HttpContext context, UserRepository userRepository)
+  public async Task Invoke(HttpContext context, UserRepository userRepository)
+{
+    // Récupérer le token JWT dans l'en-tête "Authorization" (ex: "Bearer eyJhbGciOiJI...")
+    var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        try
         {
-            // Récupérer le token JWT dans l'en-tête "Authorization" (ex: "Bearer eyJhbGciOiJI...")
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            // Initialiser un gestionnaire pour lire le token JWT
+            var tokenHandler = new JwtSecurityTokenHandler();
 
-            // Vérifie si le token existe bien dans la requête
-            if (!string.IsNullOrEmpty(token))
+            // Lire le contenu du token JWT
+            var jwtToken = tokenHandler.ReadJwtToken(token);
+
+            // Extraire le nom d'utilisateur depuis les claims du token
+            var username = jwtToken.Claims.FirstOrDefault(x => x.Type.EndsWith("/name"))?.Value;
+
+            if (username != null)
             {
-                try
+                // Récupérer l'utilisateur correspondant dans la base de données
+                var user = await userRepository.GetByUsernameAsync(username);
+
+                if (user != null)
                 {
-                    // Initialiser un gestionnaire pour lire le token JWT
-                    var tokenHandler = new JwtSecurityTokenHandler();
-
-                    // Lire le contenu du token JWT
-                    var jwtToken = tokenHandler.ReadJwtToken(token);
-
-                    // Extraire le nom d'utilisateur depuis les claims du token
-                    var username = jwtToken.Claims.FirstOrDefault(x => x.Type.EndsWith("/name"))?.Value;
-
-                    // Vérifie si le claim du username existe
-                    if (username != null)
+                    // Vérifier si l'utilisateur est un admin
+                    if (user.IsAdmin)
                     {
-                        // Récupère l'utilisateur correspondant dans la base de données MongoDB
-                        var user = await userRepository.GetByUsernameAsync(username);
-
-                        // Si l'utilisateur existe, on le stocke dans le contexte HTTP pour y accéder plus tard
-                        if (user != null)
-                        {
-                            context.Items["User"] = user;
-                        }
+                        // Si l'utilisateur est admin, ajouter cette information dans le contexte HTTP
+                        context.Items["IsAdmin"] = true;
                     }
-                }
-                catch
-                {
-                    // Si le token est invalide ou une erreur survient, on affiche un message dans la console
-                    Console.WriteLine("Token JWT invalide !");
-                    // ⚠️ Pas de levée d'exception ici pour ne pas interrompre le flux de la requête
+                    else
+                    {
+                        context.Items["IsAdmin"] = false;
+                    }
+
+                    // Ajouter l'utilisateur au contexte pour qu'il soit accessible dans le reste de la requête
+                    context.Items["User"] = user;
                 }
             }
-
-            // Appelle le middleware suivant dans le pipeline
-            await _next(context);
         }
+        catch
+        {
+            Console.WriteLine("Token JWT invalide !");
+        }
+    }
+
+    // Appelle le middleware suivant dans le pipeline
+    await _next(context);
+}
+
     }
 }

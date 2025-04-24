@@ -11,12 +11,15 @@ namespace MiniProjet.Services
     {
         private readonly PlaceRepository _placeRepository;
         private readonly IMongoCollection<Place> _placesCollection; // Référence à la collection MongoDB
+        private readonly ImageService _imageService; // Service pour gérer les images
 
-        public PlaceService(IMongoClient mongoClient, PlaceRepository placeRepository)
+        public PlaceService(IMongoClient mongoClient, PlaceRepository placeRepository, ImageService imageService)
         {
             var database = mongoClient.GetDatabase("MiniProjet");
             _placesCollection = database.GetCollection<Place>("places");
             _placeRepository = placeRepository;
+            _imageService = imageService;
+
         }
 
 
@@ -32,21 +35,24 @@ namespace MiniProjet.Services
 
         public async Task<Place> CreatePlaceAsync(CreatePlaceDTO dto)
         {
+
+            var imageUrls = dto.Images != null ? await _imageService.SaveImagesAsync(dto.Images) : new List<string>();
+
             var place = new Place
             {
-                name = dto.Name,
-                category = dto.Category,
-                description = dto.Description,
-                address = dto.Address,
-                city = dto.City,
-                latitude = dto.Latitude,
-                longitude = dto.Longitude,
-                phoneNumber = dto.PhoneNumber,
-                openingHours = dto.OpeningHours,
-                tags = dto.Tags ?? new List<string>(),
-                images = dto.Images ?? new List<string>(),
-                averageRating = 0,
-                reviewCount = 0
+                Name = dto.Name,
+                Category = dto.Category,
+                Description = dto.Description,
+                Address = dto.Address,
+                City = dto.City,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                PhoneNumber = dto.PhoneNumber,
+                OpeningHours = dto.OpeningHours,
+                Tags = dto.Tags ?? new List<string>(),
+                Images = imageUrls,
+                AverageRating = 0,
+                ReviewCount = 0
             };
 
             await _placeRepository.CreateAsync(place);
@@ -58,15 +64,15 @@ namespace MiniProjet.Services
             var place = await _placeRepository.GetByIdAsync(id);
             if (place == null) return false;
 
-            place.name = dto.name ?? place.name;
-            place.category = dto.category ?? place.category;
-            place.description = dto.description ?? place.description;
-            place.address = dto.address ?? place.address;
-            place.city = dto.city ?? place.city;
-            place.phoneNumber = dto.phoneNumber ?? place.phoneNumber;
-            place.openingHours = dto.openingHours ?? place.openingHours;
-            place.tags = dto.tags ?? place.tags;
-            place.images = dto.images ?? place.images;
+            place.Name = dto.Name ?? place.Name;
+            place.Category = dto.Category ?? place.Category;
+            place.Description = dto.Description ?? place.Description;
+            place.Address = dto.Address ?? place.Address;
+            place.City = dto.City ?? place.City;
+            place.PhoneNumber = dto.PhoneNumber ?? place.PhoneNumber;
+            place.OpeningHours = dto.OpeningHours ?? place.OpeningHours;
+            place.Tags = dto.Tags ?? place.Tags;
+            place.Images = dto.Images ?? place.Images;
 
             await _placeRepository.UpdateAsync(id, place);
             return true;

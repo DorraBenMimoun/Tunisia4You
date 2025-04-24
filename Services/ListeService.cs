@@ -28,23 +28,26 @@ namespace MiniProjet.Services
             return await _listeRepository.GetByIdAsync(id);
         }
 
-        // Ajouter une nouvelle liste
-        public async Task<Liste> CreateAsync(CreateListeDTO dto)
-        {
-            var liste = new Liste
-            {
-                Nom = dto.Nom,
-                Description = dto.Description,
-                IsPrivate = dto.IsPrivate,
-                CreateurId = dto.CreateurId,
-                LieuxIds = dto.LieuxIds ?? new List<string>(),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+ public async Task<Liste> CreateAsync(CreateListeDTO dto)
+{
+    var liste = new Liste
+    {
+        Nom = dto.Nom,
+        Description = dto.Description,
+        IsPrivate = dto.IsPrivate,
+        CreateurId = dto.CreateurId,
+        LieuxIds = dto.LieuxIds ?? new List<string>(),
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
 
-            await _listeRepository.CreateAsync(liste);
-            return liste;
-        }
+    // Création dans la base de données
+    await _listeRepository.CreateAsync(liste);
+
+    // Après création, l'ID doit être assigné, donc il sera disponible
+    return liste;
+}
+
 
 
 
@@ -64,12 +67,31 @@ namespace MiniProjet.Services
             return true;
         }
 
+        
+
+
 
         // Supprimer une liste par son ID
         public async Task DeleteAsync(string id)
         {
             await _listeRepository.DeleteAsync(id);
         }
+
+        // Récupérer les IDs des listes de l'utilisateur authentifié contenant un lieu spécifique
+public async Task<List<string>> GetListeIdsByPlaceIdAndCreateurIdAsync(string placeId, string createurId)
+{
+    // Récupérer toutes les listes créées par l'utilisateur
+    var listes = await _listeRepository.GetByCreateurIdAsync(createurId);
+
+    // Filtrer les listes qui contiennent le lieu spécifié
+    var listeIds = listes
+        .Where(l => l.LieuxIds.Contains(placeId))
+        .Select(l => l.Id.ToString()) // Assurez-vous que l'ID est correctement transformé en string
+        .ToList();
+
+    return listeIds;
+}
+
 
         // Récupérer les listes créées par un utilisateur donné
         public async Task<List<Liste>> GetByCreateurIdAsync(string createurId)

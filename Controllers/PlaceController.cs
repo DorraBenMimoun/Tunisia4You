@@ -79,15 +79,19 @@ namespace MiniProjet.Controllers
         /// </summary>
         /// <param name="dto">Les informations du lieu à créer.</param>
         /// <returns>Le lieu créé.</returns>
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [HttpPost("with-images")]
+        [Consumes("multipart/form-data")]
         [SwaggerOperation(Summary = "Créer un lieu", Description = "Ajoute un nouveau lieu à la base de données. Accessible uniquement aux administrateurs.")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> Create([FromBody] CreatePlaceDTO dto)
+        public async Task<ActionResult> Create([FromForm] CreatePlaceDTO dto)
         {
+
+            var isAdmin = (bool?)HttpContext.Items["IsAdmin"];
+
+            if (isAdmin != true)  // Vérifie si isAdmin est différent de true (c'est-à-dire, null ou false)
+            {
+                return Unauthorized(new { message = "Accès réservé aux administrateurs." });
+            }
+
 
             if (!ModelState.IsValid)
             {
@@ -138,9 +142,8 @@ namespace MiniProjet.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(string id, [FromForm] UpdatePlaceDTO dto)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdatePlaceDTO dto)
         {
-            Console.WriteLine($"Update  id : {id}"); // Debugging line
             if (!ObjectId.TryParse(id, out _))
             {
                 return BadRequest(new { message = "L'ID fourni n'est pas valide." });
@@ -160,7 +163,7 @@ namespace MiniProjet.Controllers
             // Vérifier les tags
             var validatedTags = new List<string>();
 
-            foreach (var tag in dto.tags ?? new List<string>())
+            foreach (var tag in dto.Tags ?? new List<string>())
             {
                 var existingTag = await _tagPlaceRepository.GetByLibelleAsync(tag);
                 if (existingTag == null)
@@ -175,7 +178,7 @@ namespace MiniProjet.Controllers
                 }
             }
 
-            dto.tags = validatedTags;
+            dto.Tags = validatedTags;
 
             try
             {
@@ -292,10 +295,11 @@ namespace MiniProjet.Controllers
         [SwaggerResponse(404, "Échec : Aucun lieu trouvé.")]
         public async Task<ActionResult<List<Place>>> SearchPlaces(
             [FromQuery] string? name = null,
-            [FromQuery] string? tags = null,
+            [FromQuery] List<string>? tags = null,
             [FromQuery] string? category = null,
             [FromQuery] double? minRating = null,
             [FromQuery] string? city = null)
+            
         {
             var places = await _placeService.GetAllPlacesAsync();
             
@@ -306,11 +310,11 @@ namespace MiniProjet.Controllers
 
             // Filtrage des résultats
             var filteredPlaces = places.Where(p => 
-                (string.IsNullOrEmpty(name) || p.name.ToLower().Contains(name.ToLower())) &&
-                (string.IsNullOrEmpty(category) || p.category.ToLower() == category.ToLower()) &&
-                (string.IsNullOrEmpty(city) || p.city?.ToLower() == city.ToLower()) &&
-                (!minRating.HasValue || p.averageRating >= minRating.Value) &&
-                (string.IsNullOrEmpty(tags) || p.tags.Any(t => t.ToLower() == tags.ToLower()))
+                (string.IsNullOrEmpty(name) || p.Name.ToLower().Contains(name.ToLower())) &&
+                (string.IsNullOrEmpty(category) || p.Category.ToLower() == category.ToLower()) &&
+                (string.IsNullOrEmpty(city) || p.City?.ToLower() == city.ToLower()) &&
+                (!minRating.HasValue || p.AverageRating >= minRating.Value) &&
+                (tags == null || tags.Count == 0 || p.Tags.Any(t => tags.Any(tag => tag.ToLower() == t.ToLower())))
             ).ToList();
 
             if (filteredPlaces.Count == 0)
