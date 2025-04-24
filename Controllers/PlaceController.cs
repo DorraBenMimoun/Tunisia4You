@@ -88,6 +88,7 @@ namespace MiniProjet.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> Create([FromBody] CreatePlaceDTO dto)
         {
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -139,6 +140,7 @@ namespace MiniProjet.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(string id, [FromBody] UpdatePlaceDTO dto)
         {
+            Console.WriteLine($"Update  id : {id}"); // Debugging line
             if (!ObjectId.TryParse(id, out _))
             {
                 return BadRequest(new { message = "L'ID fourni n'est pas valide." });
