@@ -9,12 +9,16 @@ namespace MiniProjet.Services
     public class ReviewService
     {
         private readonly ReviewRepository _reviewRepository;
+        private readonly UserRepository _userRepository; // Assurez-vous d'avoir une référence à UserRepository
         private readonly ReportRepository _reportRepository;
 
-        public ReviewService(ReviewRepository reviewRepository, ReportRepository reportRepository)
+        public ReviewService(ReviewRepository reviewRepository, ReportRepository reportRepository, UserRepository userRepository)
+        
         {
             _reviewRepository = reviewRepository;
             _reportRepository = reportRepository;
+            _userRepository = userRepository; // Initialisation de UserRepository
+
         }
 
         public async Task<List<Review>> GetAllReviewsAsync()
@@ -27,10 +31,29 @@ namespace MiniProjet.Services
             return await _reviewRepository.GetByIdAsync(id);
         }
 
-        public async Task<List<Review>> GetReviewsByPlaceIdAsync(string placeId)
-        {
-            return await _reviewRepository.GetByPlaceIdAsync(placeId);
-        }
+public async Task<List<ReviewWithUserDto>> GetReviewsWithUsersByPlaceIdAsync(string placeId)
+{
+    var reviews = await _reviewRepository.GetByPlaceIdAsync(placeId) ?? new List<Review>();
+
+    var userIds = reviews.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
+    var users = await _userRepository.GetManyByIdsAsync(userIds) ?? new List<User>();
+        var usersDict = users
+            .Where(u => !string.IsNullOrEmpty(u.Id))
+            .ToDictionary(u => u.Id, u => u.Username);
+
+    var result = reviews.Select(r => new ReviewWithUserDto
+    {
+        Id = r.Id,
+        Commentaire = r.Commentaire,
+        Note = r.Note,
+        CreatedAt = r.CreatedAt,
+        UserId = r.UserId,
+        Username = (r.UserId != null && usersDict.ContainsKey(r.UserId)) ? usersDict[r.UserId] : "Inconnu"
+    }).ToList();
+
+    return result;
+}
+
 
         public async Task<List<Review>> GetReviewsByUserIdAsync(string userId)
         {

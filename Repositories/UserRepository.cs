@@ -38,6 +38,14 @@ namespace MiniProjet.Repositories
             return await _users.Find(u => u.DateFinBannissement != null && u.DateFinBannissement > DateTime.UtcNow).ToListAsync();
         }
 
+       public async Task<List<User>> GetManyByIdsAsync(List<string> ids)
+        {
+            if (ids == null || ids.Count == 0) return new List<User>();
+            return await _users.Find(u => ids.Contains(u.Id)).ToListAsync();
+        }
+
+
+
         internal async Task<List<User>> GetUtilisateursNonBannisAsync()
         {
             return await _users.Find(u => u.DateFinBannissement == null).ToListAsync();

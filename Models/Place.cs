@@ -49,6 +49,11 @@ namespace MiniProjet.Models
         [SwaggerSchema("Longitude du lieu pour la géolocalisation.")]
         public double Longitude { get; set; }
 
+        [BsonElement("mapUrl")]
+        [BindRequired]
+        [SwaggerSchema("URL de la carte intégrée (Google Maps, etc.).")]
+        public string? MapUrl { get; set; }
+
         [BsonElement("phoneNumber")]
         [BindRequired]
         [SwaggerSchema("Numéro de téléphone du lieu.")]

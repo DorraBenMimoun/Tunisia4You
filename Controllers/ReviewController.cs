@@ -58,20 +58,21 @@ namespace MiniProjet.Controllers
         /// <summary>
         /// Récupérer les reviews d'un lieu spécifique.
         /// </summary>
-        [HttpGet("place/{placeId}")]
-        [SwaggerOperation(Summary = "Récupérer les reviews d'un lieu", Description = "Retourne la liste des avis pour un lieu donné.")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetByPlaceId(string placeId)
-        {
-            if (!ObjectId.TryParse(placeId, out _))
-            {
-                return BadRequest(new { message = "ID du lieu invalide." });
-            }
+   [HttpGet("place/{placeId}")]
+[SwaggerOperation(Summary = "Récupérer les reviews d'un lieu", Description = "Retourne la liste des avis pour un lieu donné.")]
+[ProducesResponseType(StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status400BadRequest)]
+public async Task<IActionResult> GetByPlaceId(string placeId)
+{
+    if (!ObjectId.TryParse(placeId, out _))
+    {
+        return BadRequest(new { message = "ID du lieu invalide." });
+    }
 
-            var reviews = await _reviewService.GetReviewsByPlaceIdAsync(placeId);
-            return Ok(new { message = "Avis du lieu récupérés avec succès.", data = reviews });
-        }
+    var reviews = await _reviewService.GetReviewsWithUsersByPlaceIdAsync(placeId);
+    return Ok(new { message = "Avis du lieu récupérés avec succès.", data = reviews });
+}
+
 
         /// <summary>
         /// Récupérer les reviews d'un utilisateur spécifique.

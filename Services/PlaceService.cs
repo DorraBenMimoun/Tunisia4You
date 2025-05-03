@@ -60,28 +60,29 @@ namespace MiniProjet.Services
         }
 
         public async Task<bool> UpdatePlaceAsync(string id, UpdatePlaceDTO dto)
+    {
+        var place = await _placeRepository.GetByIdAsync(id);
+        if (place == null) return false;
+
+        place.Name = dto.Name ?? place.Name;
+        place.Category = dto.Category ?? place.Category;
+        place.Description = dto.Description ?? place.Description;
+        place.Address = dto.Address ?? place.Address;
+        place.City = dto.City ?? place.City;
+        place.PhoneNumber = dto.PhoneNumber ?? place.PhoneNumber;
+        place.OpeningHours = dto.OpeningHours ?? place.OpeningHours;
+        place.Tags = dto.Tags ?? place.Tags;
+        place.MapUrl = dto.MapUrl ?? place.MapUrl;
+
+        if (dto.Images != null && dto.Images.Count > 0)
         {
-            var place = await _placeRepository.GetByIdAsync(id);
-            if (place == null) return false;
-
-            place.Name = dto.Name ?? place.Name;
-            place.Category = dto.Category ?? place.Category;
-            place.Description = dto.Description ?? place.Description;
-            place.Address = dto.Address ?? place.Address;
-            place.City = dto.City ?? place.City;
-            place.PhoneNumber = dto.PhoneNumber ?? place.PhoneNumber;
-            place.OpeningHours = dto.OpeningHours ?? place.OpeningHours;
-            place.Tags = dto.Tags ?? place.Tags;
-
-            if (dto.Images != null && dto.Images.Count > 0)
-            {
-                var imageUrls = await _imageService.SaveImagesAsync(dto.Images);
-                place.Images = imageUrls;
-            }
-
-            await _placeRepository.UpdateAsync(id, place);
-            return true;
+            var imageUrls = await _imageService.SaveImagesAsync(dto.Images);
+            place.Images = imageUrls;
         }
+
+        await _placeRepository.UpdateAsync(id, place);
+        return true;
+    }
 
 
 
