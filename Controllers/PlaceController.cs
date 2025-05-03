@@ -137,13 +137,20 @@ namespace MiniProjet.Controllers
         /// <param name="dto">Les nouvelles informations du lieu.</param>
         /// <returns>Un message de succès ou d'erreur.</returns>
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        [SwaggerOperation(Summary = "Mettre à jour un lieu", Description = "Modifie les informations d'un lieu existant.")]
+        [Consumes("multipart/form-data")]
+        [SwaggerOperation(Summary = "Mettre à jour un lieu", Description = "Modifie les informations d'un lieu existant. Accessible uniquement aux administrateurs.")]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdatePlaceDTO dto)
+        public async Task<IActionResult> Update(string id, [FromForm] UpdatePlaceDTO dto)
         {
+            var isAdmin = (bool?)HttpContext.Items["IsAdmin"];
+
+            if (isAdmin != true)
+            {
+                return Unauthorized(new { message = "Accès réservé aux administrateurs." });
+            }
+
             if (!ObjectId.TryParse(id, out _))
             {
                 return BadRequest(new { message = "L'ID fourni n'est pas valide." });
@@ -160,7 +167,6 @@ namespace MiniProjet.Controllers
                 return NotFound(new { message = "Lieu non trouvé avec cet ID." });
             }
 
-            // Vérifier les tags
             var validatedTags = new List<string>();
 
             foreach (var tag in dto.Tags ?? new List<string>())
@@ -190,7 +196,6 @@ namespace MiniProjet.Controllers
                 return StatusCode(500, new { message = "Une erreur interne est survenue lors de la mise à jour du lieu.", details = ex.Message });
             }
         }
-
 
         /// <summary>
         /// Supprimer un lieu existant.

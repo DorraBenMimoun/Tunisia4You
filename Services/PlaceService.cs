@@ -72,11 +72,17 @@ namespace MiniProjet.Services
             place.PhoneNumber = dto.PhoneNumber ?? place.PhoneNumber;
             place.OpeningHours = dto.OpeningHours ?? place.OpeningHours;
             place.Tags = dto.Tags ?? place.Tags;
-            place.Images = dto.Images ?? place.Images;
+
+            if (dto.Images != null && dto.Images.Count > 0)
+            {
+                var imageUrls = await _imageService.SaveImagesAsync(dto.Images);
+                place.Images = imageUrls;
+            }
 
             await _placeRepository.UpdateAsync(id, place);
             return true;
         }
+
 
 
 
