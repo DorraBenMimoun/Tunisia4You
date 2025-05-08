@@ -11,14 +11,15 @@ namespace MiniProjet.Services
         private readonly ReviewRepository _reviewRepository;
         private readonly UserRepository _userRepository; // Assurez-vous d'avoir une référence à UserRepository
         private readonly ReportRepository _reportRepository;
+        private readonly PlaceRepository _placeRepository; // Assurez-vous d'avoir une référence à PlaceRepository
 
-        public ReviewService(ReviewRepository reviewRepository, ReportRepository reportRepository, UserRepository userRepository)
-        
+        public ReviewService(ReviewRepository reviewRepository, ReportRepository reportRepository, UserRepository userRepository, PlaceRepository placeRepository)
+
         {
             _reviewRepository = reviewRepository;
             _reportRepository = reportRepository;
             _userRepository = userRepository; // Initialisation de UserRepository
-
+            _placeRepository = placeRepository;
         }
 
         public async Task<List<Review>> GetAllReviewsAsync()
@@ -70,9 +71,15 @@ public async Task<List<ReviewWithUserDto>> GetReviewsWithUsersByPlaceIdAsync(str
                 PlaceId = dto.PlaceId
             };
 
+            // 1. Ajouter la nouvelle review
             await _reviewRepository.CreateAsync(review);
+
+            // Recalculer les statistiques du lieu
+            await RecalculatePlaceStatsAsync(dto.PlaceId);
+
             return review;
         }
+
 
 
         public async Task<bool> UpdateReviewAsync(string id, UpdateReviewDTO dto)
@@ -85,8 +92,13 @@ public async Task<List<ReviewWithUserDto>> GetReviewsWithUsersByPlaceIdAsync(str
             existingReview.CreatedAt = DateTime.UtcNow;
 
             await _reviewRepository.UpdateAsync(id, existingReview);
+
+            // Recalculer les statistiques du lieu
+            await RecalculatePlaceStatsAsync(existingReview.PlaceId);
+
             return true;
         }
+
 
 
         public async Task<bool> DeleteReviewAsync(string id)
@@ -97,10 +109,31 @@ public async Task<List<ReviewWithUserDto>> GetReviewsWithUsersByPlaceIdAsync(str
             // Supprimer la review
             await _reviewRepository.DeleteAsync(id);
 
-            // Supprimer tous les signalements liés à cette review
+            // Supprimer les reports associés
             await _reportRepository.DeleteByReviewIdAsync(id);
+
+            // Recalculer les statistiques du lieu
+            await RecalculatePlaceStatsAsync(existingReview.PlaceId);
 
             return true;
         }
+
+
+
+        private async Task RecalculatePlaceStatsAsync(string placeId)
+        {
+            var reviews = await _reviewRepository.GetByPlaceIdAsync(placeId);
+            double averageRating = reviews.Any() ? reviews.Average(r => r.Note) : 0;
+            int reviewCount = reviews.Count;
+
+            var place = await _placeRepository.GetByIdAsync(placeId);
+            if (place != null)
+            {
+                place.AverageRating = averageRating;
+                place.ReviewCount = reviewCount;
+                await _placeRepository.UpdateAsync(place.Id, place);
+            }
+        }
+
     }
 }

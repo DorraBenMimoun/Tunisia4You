@@ -49,6 +49,12 @@ namespace MiniProjet.Repositories
             await _reports.DeleteManyAsync(r => r.ReviewId == reviewId);
         }
 
+        public async Task<int> CountReportsAsync()
+{
+            var count =  await _reports.CountDocumentsAsync(FilterDefinition<Report>.Empty);
+            return (int)count;
+
+        }
 
     }
 }

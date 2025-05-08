@@ -83,6 +83,11 @@ namespace MiniProjet.Models
         [SwaggerSchema("Liste des URLs des images du lieu.")]
         public List<string> Images { get; set; }
 
+        [BsonElement("createdAt")]
+        [SwaggerSchema("Date de création du lieu.")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+
         // Constructeur pour initialiser les listes et dictionnaires
         public Place()
         {
