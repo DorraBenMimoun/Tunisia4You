@@ -34,11 +34,13 @@ dotnet run
 Le projet démarre sur https://localhost:5066
 
 ## 🔐 Authentification
-/register → Inscription
-/login → Connexion → renvoie un JWT
-Ajoute le token JWT dans Swagger via l'en-tête Authorization: Bearer <token>
+
+- /register → Inscription
+- /login → Connexion → renvoie un JWT
+- Ajoute le token JWT dans Swagger via l'en-tête Authorization: Bearer <token>
 
 ## 📁 Structure du projet
+```sql
 MiniProjet/
 │
 ├── Configurations/         → Paramètres applicatifs (MongoDB, SMTP…)
@@ -53,8 +55,9 @@ MiniProjet/
 ├── Services/               → Logique métier (UserService, PlaceService…)
 ├── Program.cs              → Démarrage et configuration globale
 └── appsettings.json        → Fichier de configuration de l’application
+```
 
 
 ## 🔒 Rôles
-  Admin → Accès complet
-  User → Droits limités (ajouter review, créer liste…)
+- Admin → Accès complet
+- User → Droits limités (ajouter review, créer liste…)
