@@ -39,16 +39,7 @@ namespace MiniProjet.Models
         [SwaggerSchema("Ville où se situe le lieu.")]
         public string? City { get; set; }
 
-        [BsonElement("latitude")]
-        [BindRequired]
-        [SwaggerSchema("Latitude du lieu pour la géolocalisation.")]
-        public double Latitude { get; set; }
-
-        [BsonElement("longitude")]
-        [BindRequired]
-        [SwaggerSchema("Longitude du lieu pour la géolocalisation.")]
-        public double Longitude { get; set; }
-
+   
         [BsonElement("mapUrl")]
         [BindRequired]
         [SwaggerSchema("URL de la carte intégrée (Google Maps, etc.).")]

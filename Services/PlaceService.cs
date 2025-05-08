@@ -45,8 +45,7 @@ namespace MiniProjet.Services
                 Description = dto.Description,
                 Address = dto.Address,
                 City = dto.City,
-                Latitude = dto.Latitude,
-                Longitude = dto.Longitude,
+            
                 PhoneNumber = dto.PhoneNumber,
                 OpeningHours = dto.OpeningHours,
                 Tags = dto.Tags ?? new List<string>(),
