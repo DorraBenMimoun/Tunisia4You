@@ -20,8 +20,7 @@ namespace MiniProjet.Models
         public required string UserId { get; set; }
 
         [BsonElement("preferredTags")]
-        [BsonRepresentation(BsonType.ObjectId)]
-        [SwaggerSchema(Description = "Liste des identifiants des tags préférés de l'utilisateur.")]
+        [SwaggerSchema(Description = "Liste des libellés des tags préférés de l'utilisateur.")]
         public required List<string> PreferredTags { get; set; }
 
         [BsonElement("preferredCities")]

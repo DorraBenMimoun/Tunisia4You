@@ -18,20 +18,23 @@ namespace MiniProjet.Controllers
     public class PlaceController : ControllerBase
     {
         private readonly PlaceService _placeService;
-        private readonly TagRepository _tagPlaceRepository;
+        private readonly TagRepository _tagRepository;
         private readonly ListeService _listeService;
         private readonly ReviewService _reviewService;
+        private readonly PreferencesService _preferencesService;
 
         public PlaceController(
             PlaceService placeService,
             TagRepository tagRepository, 
             ListeService listeService,
-            ReviewService reviewService)
+            ReviewService reviewService,
+            PreferencesService preferencesService)
         {
             _placeService = placeService;
-            _tagPlaceRepository = tagRepository;
+            _tagRepository = tagRepository;
             _listeService = listeService;
             _reviewService = reviewService;
+            _preferencesService = preferencesService;
         }
 
         /// <summary>
@@ -107,11 +110,11 @@ namespace MiniProjet.Controllers
 
             foreach (var tag in dto.Tags)
             {
-                var existingTag = await _tagPlaceRepository.GetByLibelleAsync(tag);
+                var existingTag = await _tagRepository.GetByLibelleAsync(tag);
                 if (existingTag == null)
                 {
                     var newTag = new TagPlace { Libelle = tag };
-                    await _tagPlaceRepository.CreateAsync(newTag);
+                    await _tagRepository.CreateAsync(newTag);
                     validatedTags.Add(tag);
                 }
                 else
@@ -176,11 +179,11 @@ namespace MiniProjet.Controllers
 
             foreach (var tag in dto.Tags ?? new List<string>())
             {
-                var existingTag = await _tagPlaceRepository.GetByLibelleAsync(tag);
+                var existingTag = await _tagRepository.GetByLibelleAsync(tag);
                 if (existingTag == null)
                 {
                     var newTag = new TagPlace { Libelle = tag };
-                    await _tagPlaceRepository.CreateAsync(newTag);
+                    await _tagRepository.CreateAsync(newTag);
                     validatedTags.Add(tag);
                 }
                 else
@@ -344,7 +347,7 @@ namespace MiniProjet.Controllers
         /// </summary>
         /// <returns>Liste des lieux recommandés</returns>
         [HttpGet("recommandations")]
-        [SwaggerOperation(Summary = "Obtenir des recommandations personnalisées", Description = "Retourne une liste de lieux recommandés basée sur l'historique des avis positifs de l'utilisateur.")]
+        [SwaggerOperation(Summary = "Obtenir des recommandations personnalisées", Description = "Retourne une liste de lieux recommandés basée sur les préférences de l'utilisateur et son historique d'avis.")]
         public async Task<ActionResult<List<Place>>> GetRecommandations()
         {
             // Récupérer l'ID de l'utilisateur connecté
@@ -355,48 +358,48 @@ namespace MiniProjet.Controllers
                 return Unauthorized(new { message = "Utilisateur non authentifié." });
             }
 
-            // Récupérer les avis récents et positifs de l'utilisateur (note >= 4)
-            var recentReviews = await _reviewService.GetRecentPositiveReviewsAsync(userId, 10);
-            
-            if (recentReviews == null || !recentReviews.Any())
+            // Récupérer les préférences de l'utilisateur
+            var userPreferences = await _preferencesService.GetUserPreferences(userId);
+            if (userPreferences == null)
             {
-                return NotFound(new { message = "Pas assez d'historique pour générer des recommandations." });
-            }
-
-            // Récupérer les catégories et tags des lieux appréciés
-            var likedCategories = new HashSet<string>();
-            var likedTags = new HashSet<string>();
-
-            foreach (var review in recentReviews)
-            {
-                var place = await _placeService.GetPlaceByIdAsync(review.PlaceId);
-                if (place != null)
-                {
-                    likedCategories.Add(place.Category);
-                    foreach (var tag in place.Tags)
-                    {
-                        likedTags.Add(tag);
-                    }
-                }
+                return BadRequest(new { message = "Veuillez d'abord configurer vos préférences pour recevoir des recommandations personnalisées." });
             }
 
             // Récupérer tous les lieux
             var allPlaces = await _placeService.GetAllPlacesAsync();
             
-            // Filtrer les lieux déjà notés par l'utilisateur
-            var ratedPlaceIds = recentReviews.Select(r => r.PlaceId).ToHashSet();
-            
-            // Trouver les lieux similaires
-            var recommendations = allPlaces
+            // Filtrer les lieux selon les préférences de l'utilisateur
+            var filteredPlaces = allPlaces.Where(p => 
+                // Vérifier les villes préférées
+                userPreferences.PreferredCities.Contains(p.City) &&
+                // Vérifier les catégories préférées
+                userPreferences.PreferredCategories.Contains(p.Category) &&
+                // Vérifier la note minimale
+                p.AverageRating >= userPreferences.MinRating &&
+                // Vérifier les tags préférés (au moins un tag en commun)
+                p.Tags.Any(t => userPreferences.PreferredTags.Contains(t))
+            ).ToList();
+
+            // Si aucun lieu ne correspond aux préférences, retourner un message approprié
+            if (!filteredPlaces.Any())
+            {
+                return NotFound(new { message = "Aucun lieu ne correspond exactement à vos préférences. Essayez d'élargir vos critères." });
+            }
+
+            // Récupérer les avis récents et positifs de l'utilisateur
+            var recentReviews = await _reviewService.GetRecentPositiveReviewsAsync(userId, 10);
+            var ratedPlaceIds = recentReviews?.Select(r => r.PlaceId).ToHashSet() ?? new HashSet<string>();
+
+            // Exclure les lieux déjà notés par l'utilisateur
+            var recommendations = filteredPlaces
                 .Where(p => !ratedPlaceIds.Contains(p.Id))
-                .Where(p => likedCategories.Contains(p.Category) || p.Tags.Any(t => likedTags.Contains(t)))
                 .OrderByDescending(p => p.AverageRating)
                 .Take(10)
                 .ToList();
 
             if (!recommendations.Any())
             {
-                return NotFound(new { message = "Aucune recommandation trouvée." });
+                return NotFound(new { message = "Vous avez déjà noté tous les lieux correspondant à vos préférences." });
             }
 
             return Ok(new { 

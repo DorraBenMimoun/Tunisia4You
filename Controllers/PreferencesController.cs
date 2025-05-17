@@ -35,7 +35,14 @@ namespace MiniProjet.Controllers
         [SwaggerResponse(200, "Préférences créées ou mises à jour avec succès", typeof(Preferences))]
         public async Task<ActionResult<Preferences>> CreateOrUpdatePreferences(Preferences preferences)
         {
-            var result = await _preferencesService.CreateOrUpdatePreferences(preferences);
+              // Récupérer l'ID de l'utilisateur connecté
+            var userId = HttpContext.Items["user_id"]?.ToString();
+          
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "Utilisateur non authentifié." });
+            }
+            var result = await _preferencesService.CreateOrUpdatePreferences(preferences, userId);
             return Ok(result);
         }
     }
