@@ -20,13 +20,18 @@ namespace MiniProjet.Controllers
         private readonly PlaceService _placeService;
         private readonly TagRepository _tagPlaceRepository;
         private readonly ListeService _listeService;
+        private readonly ReviewService _reviewService;
 
-
-        public PlaceController(PlaceService placeService,TagRepository tagRepository, ListeService listeService)
+        public PlaceController(
+            PlaceService placeService,
+            TagRepository tagRepository, 
+            ListeService listeService,
+            ReviewService reviewService)
         {
             _placeService = placeService;
             _tagPlaceRepository = tagRepository;
             _listeService = listeService;
+            _reviewService = reviewService;
         }
 
         /// <summary>
@@ -331,6 +336,73 @@ namespace MiniProjet.Controllers
                 message = "Recherche effectuée avec succès.", 
                 data = filteredPlaces,
                 count = filteredPlaces.Count
+            });
+        }
+
+        /// <summary>
+        /// Obtenir des recommandations de lieux basées sur l'historique des avis de l'utilisateur.
+        /// </summary>
+        /// <returns>Liste des lieux recommandés</returns>
+        [HttpGet("recommandations")]
+        [SwaggerOperation(Summary = "Obtenir des recommandations personnalisées", Description = "Retourne une liste de lieux recommandés basée sur l'historique des avis positifs de l'utilisateur.")]
+        public async Task<ActionResult<List<Place>>> GetRecommandations()
+        {
+            // Récupérer l'ID de l'utilisateur connecté
+            var userId = HttpContext.Items["user_id"]?.ToString();
+          
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "Utilisateur non authentifié." });
+            }
+
+            // Récupérer les avis récents et positifs de l'utilisateur (note >= 4)
+            var recentReviews = await _reviewService.GetRecentPositiveReviewsAsync(userId, 10);
+            
+            if (recentReviews == null || !recentReviews.Any())
+            {
+                return NotFound(new { message = "Pas assez d'historique pour générer des recommandations." });
+            }
+
+            // Récupérer les catégories et tags des lieux appréciés
+            var likedCategories = new HashSet<string>();
+            var likedTags = new HashSet<string>();
+
+            foreach (var review in recentReviews)
+            {
+                var place = await _placeService.GetPlaceByIdAsync(review.PlaceId);
+                if (place != null)
+                {
+                    likedCategories.Add(place.Category);
+                    foreach (var tag in place.Tags)
+                    {
+                        likedTags.Add(tag);
+                    }
+                }
+            }
+
+            // Récupérer tous les lieux
+            var allPlaces = await _placeService.GetAllPlacesAsync();
+            
+            // Filtrer les lieux déjà notés par l'utilisateur
+            var ratedPlaceIds = recentReviews.Select(r => r.PlaceId).ToHashSet();
+            
+            // Trouver les lieux similaires
+            var recommendations = allPlaces
+                .Where(p => !ratedPlaceIds.Contains(p.Id))
+                .Where(p => likedCategories.Contains(p.Category) || p.Tags.Any(t => likedTags.Contains(t)))
+                .OrderByDescending(p => p.AverageRating)
+                .Take(10)
+                .ToList();
+
+            if (!recommendations.Any())
+            {
+                return NotFound(new { message = "Aucune recommandation trouvée." });
+            }
+
+            return Ok(new { 
+                message = "Recommandations générées avec succès.", 
+                data = recommendations,
+                count = recommendations.Count
             });
         }
 

@@ -49,5 +49,20 @@ namespace MiniProjet.Repositories
         {
             await _reviews.DeleteOneAsync(r => r.Id == id);
         }
+
+        public async Task<List<Review>> GetRecentPositiveReviewsAsync(string userId, int limit)
+        {
+            var filter = Builders<Review>.Filter.And(
+                Builders<Review>.Filter.Eq(r => r.UserId, userId),
+                Builders<Review>.Filter.Gte(r => r.Note, 4)
+            );
+
+            var sort = Builders<Review>.Sort.Descending(r => r.CreatedAt);
+
+            return await _reviews.Find(filter)
+                .Sort(sort)
+                .Limit(limit)
+                .ToListAsync();
+        }
     }
 }

@@ -19,56 +19,56 @@ namespace MiniProjet.Middleware
         }
 
         // Cette méthode est appelée à chaque requête HTTP
-  public async Task Invoke(HttpContext context, UserRepository userRepository)
-{
-    // Récupérer le token JWT dans l'en-tête "Authorization" (ex: "Bearer eyJhbGciOiJI...")
-    var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-
-    if (!string.IsNullOrEmpty(token))
-    {
-        try
+        public async Task Invoke(HttpContext context, UserRepository userRepository)
         {
-            // Initialiser un gestionnaire pour lire le token JWT
-            var tokenHandler = new JwtSecurityTokenHandler();
+            // Récupérer le token JWT dans l'en-tête "Authorization" (ex: "Bearer eyJhbGciOiJI...")
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
-            // Lire le contenu du token JWT
-            var jwtToken = tokenHandler.ReadJwtToken(token);
-
-            // Extraire le nom d'utilisateur depuis les claims du token
-            var username = jwtToken.Claims.FirstOrDefault(x => x.Type.EndsWith("/name"))?.Value;
-
-            if (username != null)
+            if (!string.IsNullOrEmpty(token))
             {
-                // Récupérer l'utilisateur correspondant dans la base de données
-                var user = await userRepository.GetByUsernameAsync(username);
-
-                if (user != null)
+                try
                 {
-                    // Vérifier si l'utilisateur est un admin
-                    if (user.IsAdmin)
-                    {
-                        // Si l'utilisateur est admin, ajouter cette information dans le contexte HTTP
-                        context.Items["IsAdmin"] = true;
-                    }
-                    else
-                    {
-                        context.Items["IsAdmin"] = false;
-                    }
+                    // Initialiser un gestionnaire pour lire le token JWT
+                    var tokenHandler = new JwtSecurityTokenHandler();
 
-                    // Ajouter l'utilisateur au contexte pour qu'il soit accessible dans le reste de la requête
-                    context.Items["User"] = user;
+                    // Lire le contenu du token JWT
+                    var jwtToken = tokenHandler.ReadJwtToken(token);
+
+                    // Extraire le nom d'utilisateur depuis les claims du token
+                    var username = jwtToken.Claims.FirstOrDefault(x => x.Type.EndsWith("/name"))?.Value;
+
+                    if (username != null)
+                    {
+                        // Récupérer l'utilisateur correspondant dans la base de données
+                        var user = await userRepository.GetByUsernameAsync(username);
+
+                        if (user != null)
+                        {
+                            // Vérifier si l'utilisateur est un admin
+                            if (user.IsAdmin)
+                            {
+                                // Si l'utilisateur est admin, ajouter cette information dans le contexte HTTP
+                                context.Items["IsAdmin"] = true;
+                            }
+                            else
+                            {
+                                context.Items["IsAdmin"] = false;
+                            }
+
+                            // Ajouter l'utilisateur au contexte pour qu'il soit accessible dans le reste de la requête
+                            context.Items["User"] = user;
+                            context.Items["user_id"] = user.Id;
+                        }
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("Token JWT invalide !");
                 }
             }
-        }
-        catch
-        {
-            Console.WriteLine("Token JWT invalide !");
-        }
-    }
 
-    // Appelle le middleware suivant dans le pipeline
-    await _next(context);
-}
-
+            // Appelle le middleware suivant dans le pipeline
+            await _next(context);
+        }
     }
 }

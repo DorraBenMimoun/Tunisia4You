@@ -48,6 +48,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<ReportRepository>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<StatisticsService>();
+builder.Services.AddScoped<PreferencesService>();
 
 
 // 📌 Ajout de JwtHelper pour la gestion des tokens

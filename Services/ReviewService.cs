@@ -135,5 +135,10 @@ public async Task<List<ReviewWithUserDto>> GetReviewsWithUsersByPlaceIdAsync(str
             }
         }
 
+        public async Task<List<Review>> GetRecentPositiveReviewsAsync(string userId, int limit)
+        {
+            return await _reviewRepository.GetRecentPositiveReviewsAsync(userId, limit);
+        }
+
     }
 }
